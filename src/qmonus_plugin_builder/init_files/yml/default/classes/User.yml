@@ -1,0 +1,58 @@
+abstract: false
+api_generation: false
+attributes:
+  identifier:
+    field_immutable: true
+    field_name: id
+    field_persistence: true
+    field_type: string
+  local_fields:
+  - field_immutable: false
+    field_name: name
+    field_nullable: false
+    field_persistence: true
+    field_type: string
+    field_unique: false
+  - field_immutable: false
+    field_name: description
+    field_nullable: false
+    field_persistence: true
+    field_type: string
+    field_unique: false
+  - field_immutable: false
+    field_name: type
+    field_nullable: false
+    field_persistence: true
+    field_type: string
+    field_unique: false
+category: default
+methods:
+  class_methods:
+  - method_body: |-
+      def generate_id(cls):
+          return str(uuid.uuid4())
+  instance_methods:
+  - auto_rollback: true
+    field_order: ascend
+    method_body: |-
+      def to_dict(self):
+          return {
+              "id": self.id,
+              "name": self.name,
+              "description": self.description,
+              "type": self.type,
+          }
+    multiplexable_number: 1
+    propagation_mode: false
+    topdown: true
+  - auto_rollback: true
+    field_order: ascend
+    method_body: |-
+      async def do_something(self, region: str = options.region):
+          print(region)
+    multiplexable_number: 1
+    propagation_mode: false
+    topdown: true
+name: User
+persistence: true
+version: 1

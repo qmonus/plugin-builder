@@ -1,0 +1,8 @@
+category: default
+code: |-
+  """Write code below"""
+
+  USER_TYPE_MEMBER = 'member'
+  USER_TYPE_ADMIN = 'admin'
+name: constants
+version: 1

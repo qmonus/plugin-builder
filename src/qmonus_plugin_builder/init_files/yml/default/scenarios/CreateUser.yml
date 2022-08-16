@@ -1,0 +1,95 @@
+additional_paths: []
+category: default
+commands:
+- command: request_validation
+  kwargs:
+    aspect_options:
+      post:
+        process: |-
+          global req
+          global id
+          global lock_keys
+
+          req = json.loads(context.session.request.body)['user']
+          id = atom.User.generate_id()
+          lock_keys = [id]
+    body:
+      properties:
+        user:
+          properties:
+            description:
+              type: string
+            name:
+              type: string
+          required:
+          - name
+          - description
+          type: object
+      required:
+      - user
+      type: object
+- command: script
+  kwargs:
+    cancellation:
+      actions:
+      - action_type: script
+        code: |-
+          # Cancel
+          user = await atom.User.load(id)
+          if user:
+              await user.destroy()
+      cancellable: true
+    code: |-
+      user = atom.User(
+          id=id,
+          name=req['name'],
+          description=req['description'],
+          type=context.constants.USER_TYPE_MEMBER,
+      )
+      await user.save()
+
+      res = {"user": user.to_dict()}
+
+      context.session.set_status(201)
+      context.session.finish(res)
+  label: Response
+connect_timeout: 60
+global_variables:
+  id:
+    description: ''
+    initial: null
+  lock_keys:
+    description: ''
+    initial: null
+  req:
+    description: ''
+    initial: null
+method: POST
+name: CreateUser
+request_timeout: 60
+routing_auto_generation_mode: true
+routing_options:
+  scope: local
+spec:
+  response:
+    normal:
+      codes:
+      - 200
+transaction:
+  async: true
+  auto_begin: true
+  auto_response: false
+  auto_rollback: true
+  enable: true
+  lock:
+    lock_keys:
+    - lock_keys
+    retry_count: 0
+    retry_interval: 0
+  xdomain: ''
+  xname: ''
+  xname_use_counter: false
+  xtype: ''
+uri: /v1/users
+variable_groups: []
+version: 1
