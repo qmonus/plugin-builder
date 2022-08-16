@@ -1,4 +1,4 @@
-__version__ = '0.8.2'
+__version__ = '1.0.0'
 
 import logging
 import typing
@@ -59,7 +59,7 @@ def update(project_path: str) -> None:
         atom_import_stmts.append(import_stmt)
         class_names.append(classes_path.stem)
 
-    module_import_stmts = []    
+    module_import_stmts = []
     paths = module_parser.get_files(qmonus_sdk_plugins_path)
     for path in paths:
         parent_name = '..' + str(path.parent.relative_to(qmonus_sdk_plugins_path)
@@ -72,96 +72,96 @@ def update(project_path: str) -> None:
     init_path = libs_path.joinpath('__init__.py')
     logger.info(f"Creating '{str(init_path)}")
     file_utils.create_file(
-        file_path=init_path, 
-        data=str_utils.render(template=templates.INIT_TEMPLATE, 
+        file_path=init_path,
+        data=str_utils.render(template=templates.INIT_TEMPLATE,
                               variables={}))
 
     """Create libs.module.py"""
     _path = libs_path.joinpath('module.py')
     logger.info(f"Creating '{str(_path)}")
     file_utils.create_file(
-        file_path=_path, 
-        data=str_utils.render(template=templates.MODULE_TEMPLATE, 
+        file_path=_path,
+        data=str_utils.render(template=templates.MODULE_TEMPLATE,
                               variables={"import_stmts": module_import_stmts}))
 
     """Create libs.model.py"""
     model_path = libs_path.joinpath('model.py')
     logger.info(f"Creating '{str(model_path)}")
     file_utils.create_file(
-        file_path=model_path, 
-        data=str_utils.render(template=templates.MODEL_TEMPLATE, 
+        file_path=model_path,
+        data=str_utils.render(template=templates.MODEL_TEMPLATE,
                               variables={"class_names": class_names}))
 
     """Create libs.scenario_context.py"""
     lib_path = libs_path.joinpath('scenario_context.py')
     logger.info(f"Creating '{str(lib_path)}")
     file_utils.create_file(
-        file_path=lib_path, 
-        data=str_utils.render(template=templates.SCENARIO_CONTEXT_TEMPLATE, 
+        file_path=lib_path,
+        data=str_utils.render(template=templates.SCENARIO_CONTEXT_TEMPLATE,
                               variables={}))
 
     """Create libs.daemon_context.py"""
     lib_path = libs_path.joinpath('daemon_context.py')
     logger.info(f"Creating '{str(lib_path)}")
     file_utils.create_file(
-        file_path=lib_path, 
-        data=str_utils.render(template=templates.DAEMON_CONTEXT_TEMPLATE, 
+        file_path=lib_path,
+        data=str_utils.render(template=templates.DAEMON_CONTEXT_TEMPLATE,
                               variables={}))
 
     """Create libs.class_context.py"""
     lib_path = libs_path.joinpath('class_context.py')
     logger.info(f"Creating '{str(lib_path)}")
     file_utils.create_file(
-        file_path=lib_path, 
-        data=str_utils.render(template=templates.CLASS_CONTEXT_TEMPLATE, 
+        file_path=lib_path,
+        data=str_utils.render(template=templates.CLASS_CONTEXT_TEMPLATE,
                               variables={}))
 
     """Create libs.module_context.py"""
     lib_path = libs_path.joinpath('module_context.py')
     logger.info(f"Creating '{str(lib_path)}")
     file_utils.create_file(
-        file_path=lib_path, 
-        data=str_utils.render(template=templates.MODULE_CONTEXT_TEMPLATE, 
+        file_path=lib_path,
+        data=str_utils.render(template=templates.MODULE_CONTEXT_TEMPLATE,
                               variables={}))
 
     """Create libs.scenario_globals.py"""
     lib_path = libs_path.joinpath('scenario_globals.py')
     logger.info(f"Creating '{str(lib_path)}")
     file_utils.create_file(
-        file_path=lib_path, 
-        data=str_utils.render(template=templates.SCENARIO_GLOBALS_TEMPLATE, 
+        file_path=lib_path,
+        data=str_utils.render(template=templates.SCENARIO_GLOBALS_TEMPLATE,
                               variables={}))
 
     """Create libs.daemon_globals.py"""
     lib_path = libs_path.joinpath('daemon_globals.py')
     logger.info(f"Creating '{str(lib_path)}")
     file_utils.create_file(
-        file_path=lib_path, 
-        data=str_utils.render(template=templates.DAEMON_GLOBALS_TEMPLATE, 
+        file_path=lib_path,
+        data=str_utils.render(template=templates.DAEMON_GLOBALS_TEMPLATE,
                               variables={}))
 
     """Create libs.class_globals.py"""
     lib_path = libs_path.joinpath('class_globals.py')
     logger.info(f"Creating '{str(lib_path)}")
     file_utils.create_file(
-        file_path=lib_path, 
-        data=str_utils.render(template=templates.CLASS_GLOBALS_TEMPLATE, 
+        file_path=lib_path,
+        data=str_utils.render(template=templates.CLASS_GLOBALS_TEMPLATE,
                               variables={}))
 
     """Create libs.module_globals.py"""
     lib_path = libs_path.joinpath('module_globals.py')
     logger.info(f"Creating '{str(lib_path)}")
     file_utils.create_file(
-        file_path=lib_path, 
-        data=str_utils.render(template=templates.MODULE_GLOBALS_TEMPLATE, 
+        file_path=lib_path,
+        data=str_utils.render(template=templates.MODULE_GLOBALS_TEMPLATE,
                               variables={}))
 
     """Create libs.atom.py"""
     class_path = libs_path.joinpath('atom.py')
     logger.info(f"Creating '{str(class_path)}")
     file_utils.create_file(
-        file_path=class_path, 
-        data=str_utils.render(template=templates.ATOM_TEMPLATE, 
+        file_path=class_path,
+        data=str_utils.render(template=templates.ATOM_TEMPLATE,
                               variables={"import_stmts": atom_import_stmts}))
 
     """Create libs.classes.py"""
@@ -169,8 +169,8 @@ def update(project_path: str) -> None:
     classes_path = libs_path.joinpath('classes.py')
     logger.info(f"Creating '{str(classes_path)}")
     file_utils.create_file(
-        file_path=classes_path, 
-        data=str_utils.render(template=templates.CLASSES_INITIAL_TEMPLATE, 
+        file_path=classes_path,
+        data=str_utils.render(template=templates.CLASSES_INITIAL_TEMPLATE,
                               variables={"class_names": class_names}))
 
     # Import atom first
@@ -209,7 +209,7 @@ def update(project_path: str) -> None:
                     "type": type,
                     "default": default,
                 })
-            
+
         for local_field in class_definition.setting.local_fields:
             name = local_field.name
             default = _convert_default(local_field.default)
@@ -257,7 +257,7 @@ def update(project_path: str) -> None:
             "variables_without_defaults": variables_without_defaults,
             "variables_with_defaults": variables_with_defaults,
         }
-        class_def_dicts.append(class_def_dict)    
+        class_def_dicts.append(class_def_dict)
 
     logger.info(f"Recreating '{str(classes_path)}")
     file_utils.create_file(
@@ -278,7 +278,7 @@ def _convert_default(default: typing.Optional[str]) -> typing.Optional[str]:
 
 
 def _convert_type(
-    type: class_component.BaseType, 
+    type: class_component.BaseType,
     nullable: bool,
 ) -> str:
     if isinstance(type, class_component.CLASS):
@@ -305,7 +305,7 @@ def _convert_type(
         result = 'typing.List[typing.Any]'
     else:
         raise ValueError(f"Invalid type: '{str(type.__class__.__name__)}")
-    
+
     if nullable:
         result = f'typing.Optional[{result}]'
 

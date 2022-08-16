@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qmonus-plugin-builder"
-version = "0.8.2"
+version = "1.0.0"
 description = "Qmonus-PluginBuilder"
 authors = ["NTT Communications Corporation"]
 

@@ -29,7 +29,7 @@ def main() -> None:
         description='Qmonus-PluginBuilder',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    
+
     parser.add_argument(
         '-v', '--version',
         action='version',
@@ -48,7 +48,7 @@ def main() -> None:
 
     # Define init parser
     init_parser = sub_parser.add_parser(
-        'init', 
+        'init',
         help='Initialize',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
@@ -60,7 +60,7 @@ def main() -> None:
 
     # Define update parser
     update_parser = sub_parser.add_parser(
-        'update', 
+        'update',
         help='Update libs',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
