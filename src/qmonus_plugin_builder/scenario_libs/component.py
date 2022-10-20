@@ -5,6 +5,7 @@ import typing
 
 from ..libs import inspect_utils
 
+
 SCOPE_LOCAL = 'local'
 SCOPE_PUBLIC = 'public'
 SCOPE_SECURE = 'secure'
@@ -183,3 +184,28 @@ class Script(BaseCommand):
     async def post_process(self) -> None:
         """post process code (optional)"""
         pass
+
+
+class CustomSetting(object):
+    def __init__(
+        self,
+        label: typing.Optional[str] = None,
+        id_in_kwargs: typing.Optional[str] = None,
+    ) -> None:
+        self.label = label
+        self.id_in_kwargs = id_in_kwargs
+
+
+class Custom(BaseCommand):
+    @abc.abstractmethod
+    def __setting__(self) -> CustomSetting:
+        pass
+
+    def to_dict(self) -> dict:
+        return dict(
+            command='custom',
+            label=self.__setting__().label,
+            kwargs=dict(
+                id=self.__setting__().id_in_kwargs
+            ),
+        )

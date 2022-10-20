@@ -46,7 +46,7 @@ class ScenarioYAML(object):
 
         self.global_variables: typing.Dict[str, GlobalVariableYAML] = {}
         self.transaction: typing.Any = {}
-        self.commands: typing.List[typing.Union[RequestValidationCommandYAML, ScriptCommandYAML]] = []
+        self.commands: typing.List[typing.Union[RequestValidationCommandYAML, ScriptCommandYAML, dict]] = []
 
         # Not supported
         self.variable_groups: typing.Any = []
@@ -352,6 +352,8 @@ def to_yaml(scenario_def: parser.ScenarioDefinition) -> ScenarioYAML:
                 pre_process_code=pre_process_code,
                 post_process_code=post_process_code,
             )
+        elif isinstance(command, comp.BaseCommand) and hasattr(command, 'to_dict'):
+            scenario_yaml.commands.append(command.to_dict())
         else:
             raise exceptions.CommandError("FatalError: Invalid command type")
 
