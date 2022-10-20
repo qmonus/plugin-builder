@@ -1,9 +1,9 @@
 from __future__ import annotations
+
 import abc
 import typing
 
 from ..libs import inspect_utils
-
 
 SCOPE_LOCAL = 'local'
 SCOPE_PUBLIC = 'public'
