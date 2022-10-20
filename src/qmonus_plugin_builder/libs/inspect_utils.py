@@ -32,7 +32,6 @@ def get_function_code(func: typing.Callable[..., typing.Any]) -> str:
     last_func_def_token = None
     count = 0
     for token in tokens:
-        # print(token.string, token.start, token.end, tokenize.tok_name[token.type], tokenize.tok_name[token.exact_type])
         if token.type == tokenize.OP and token.string == '(':
             count = count + 1
         elif token.type == tokenize.OP and token.string == ')':
