@@ -72,6 +72,7 @@ class ScenarioYAML(object):
         retry_count: int,
         retry_interval: float,
         timeout: typing.Optional[int],
+        async_: bool,
     ) -> None:
         transaction = TransactionYAML(
             enable=enable,
@@ -86,6 +87,7 @@ class ScenarioYAML(object):
             retry_count=retry_count,
             retry_interval=retry_interval,
             timeout=timeout,
+            async_=async_,
         )
         self.transaction = transaction
 
@@ -143,8 +145,6 @@ class ScenarioYAML(object):
 
     def to_dict(self) -> typing.Dict[str, typing.Any]:
         _dict: typing.Dict[str, typing.Any] = data_lib.to_primitive(self)
-        _dict['transaction']['async'] = _dict['transaction']['async_']
-        del _dict['transaction']['async_']
         return _dict
 
     def dump(self) -> str:
@@ -167,13 +167,13 @@ class TransactionYAML(object):
         retry_count: int,
         retry_interval: float,
         timeout: typing.Optional[int],
+        async_: bool = True,
     ) -> None:
         self.enable = enable
         self.xname = xname
 
-        # Not supported
-        self.async_ = True
-
+        # because it is a reserved word
+        setattr(self, 'async', async_)
         if self.enable:
             self.xname_use_counter = xname_use_counter
             self.xdomain = xdomain
@@ -317,6 +317,7 @@ def to_yaml(scenario_def: parser.ScenarioDefinition) -> ScenarioYAML:
         retry_count=transaction.retry_count,
         retry_interval=transaction.retry_interval,
         timeout=transaction.timeout,
+        async_=transaction.async_,
     )
 
     for global_variable in scenario_def.global_variables:
