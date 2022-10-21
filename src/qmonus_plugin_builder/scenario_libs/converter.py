@@ -1,10 +1,11 @@
 from __future__ import annotations
-import typing
+
 import logging
 import pathlib
+import typing
 
 from .. import exceptions
-from ..libs import yaml_utils, file_utils, data_lib
+from ..libs import data_lib, file_utils, yaml_utils
 from . import component as comp
 from . import parser
 
@@ -13,8 +14,8 @@ logger = logging.getLogger(__name__)
 
 class ScenarioYAML(object):
     def __init__(
-        self, 
-        category : typing.Optional[str],
+        self,
+        category: typing.Optional[str],
         name: str,
         version: int,
         update: typing.Optional[str],
@@ -31,7 +32,7 @@ class ScenarioYAML(object):
         self.uri = uri
         self.method = method
         self.additional_paths = additional_paths
-        self.request_timeout =request_timeout
+        self.request_timeout = request_timeout
         self.connect_timeout = connect_timeout
         self.version = version
 
@@ -45,8 +46,8 @@ class ScenarioYAML(object):
 
         self.global_variables: typing.Dict[str, GlobalVariableYAML] = {}
         self.transaction: typing.Any = {}
-        self.commands: typing.List[typing.Union[RequestValidationCommandYAML, ScriptCommandYAML]] = []
-        
+        self.commands: typing.List[typing.Union[RequestValidationCommandYAML, ScriptCommandYAML, dict]] = []
+
         # Not supported
         self.variable_groups: typing.Any = []
         self.spec: typing.Any = {
@@ -302,7 +303,7 @@ def to_yaml(scenario_def: parser.ScenarioDefinition) -> ScenarioYAML:
         connect_timeout=setting.connect_timeout,
         routing_auto_generation_mode=setting.routing_auto_generation_mode,
     )
-    
+
     scenario_yaml.set_transaction(
         enable=transaction.enable,
         xdomain=transaction.xdomain,
@@ -340,7 +341,7 @@ def to_yaml(scenario_def: parser.ScenarioDefinition) -> ScenarioYAML:
             )
         elif isinstance(command, comp.Script):
             code = command.get_code('code')
-            cancel_code =  command.get_code('cancel_code')
+            cancel_code = command.get_code('cancel_code')
             pre_process_code = command.get_code('pre_process')
             post_process_code = command.get_code('post_process')
             scenario_yaml.add_script_command(
@@ -351,6 +352,8 @@ def to_yaml(scenario_def: parser.ScenarioDefinition) -> ScenarioYAML:
                 pre_process_code=pre_process_code,
                 post_process_code=post_process_code,
             )
+        elif isinstance(command, comp.BaseCommand) and hasattr(command, 'to_dict'):
+            scenario_yaml.commands.append(command.to_dict())
         else:
             raise exceptions.CommandError("FatalError: Invalid command type")
 

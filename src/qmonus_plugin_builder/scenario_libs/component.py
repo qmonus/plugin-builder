@@ -1,9 +1,9 @@
 from __future__ import annotations
+
 import abc
 import typing
 
 from ..libs import inspect_utils
-
 
 SCOPE_LOCAL = 'local'
 SCOPE_PUBLIC = 'public'
@@ -183,3 +183,83 @@ class Script(BaseCommand):
     async def post_process(self) -> None:
         """post process code (optional)"""
         pass
+
+
+class BreakpointSetting(object):
+    def __init__(
+        self,
+        abort_in_kwargs: bool = True,
+        immediate_cancel_in_kwargs: bool = True,
+    ) -> None:
+        self.abort_in_kwargs = abort_in_kwargs
+        self.immediate_cancel_in_kwargs = immediate_cancel_in_kwargs
+
+
+class Breakpoint(BaseCommand):
+    @abc.abstractmethod
+    def __setting__(self) -> BreakpointSetting:
+        pass
+
+    def to_dict(self) -> dict:
+        return dict(
+            command='breakpoint',
+            kwargs=dict(
+                abort=self.__setting__().abort_in_kwargs,
+                immediate_cancel=self.__setting__().immediate_cancel_in_kwargs,
+            ),
+        )
+
+
+class ServeSetting(object):
+    def __init__(
+        self,
+        path_in_kwargs: typing.Optional[str] = None,
+        method_in_kwargs: typing.Optional[str] = None,
+        xname_key_in_kwargs: typing.Optional[str] = None,
+    ) -> None:
+        self.path_in_kwargs = path_in_kwargs
+        self.method_in_kwargs = method_in_kwargs
+        self.xname_key_in_kwargs = xname_key_in_kwargs
+
+
+class Serve(BaseCommand):
+    @abc.abstractmethod
+    def __setting__(self) -> ServeSetting:
+        pass
+
+    async def pre_process(self) -> None:
+        """pre process code (optional)"""
+        pass
+
+    def to_dict(self) -> dict:
+        return dict(
+            command='serve',
+            kwargs=dict(
+                path=self.__setting__().path_in_kwargs,
+                method=self.__setting__().method_in_kwargs,
+                xname_key=self.__setting__().xname_key_in_kwargs,
+                aspect_options=dict(pre=dict(process=self.get_code('pre_process'))),
+            ),
+        )
+
+
+class SleepSetting(object):
+    def __init__(
+        self,
+        seconds_in_kwargs: typing.Optional[int] = None,
+    ) -> None:
+        self.seconds_in_kwargs = seconds_in_kwargs
+
+
+class Sleep(BaseCommand):
+    @abc.abstractmethod
+    def __setting__(self) -> SleepSetting:
+        pass
+
+    def to_dict(self) -> dict:
+        return dict(
+            command='sleep',
+            kwargs=dict(
+                seconds=self.__setting__().seconds_in_kwargs
+            ),
+        )
