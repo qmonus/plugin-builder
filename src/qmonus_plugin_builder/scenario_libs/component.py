@@ -72,6 +72,7 @@ class Transaction(object):
         retry_count: int = 0,
         retry_interval: float = 0,
         timeout: typing.Optional[int] = None,
+        async_: bool = True,
     ) -> None:
         if lock_keys is None:
             lock_keys = []
@@ -88,6 +89,7 @@ class Transaction(object):
         self.retry_count = retry_count
         self.retry_interval = retry_interval
         self.timeout = timeout
+        self.async_ = async_
 
 
 # Global Variables
