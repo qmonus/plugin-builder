@@ -2,12 +2,74 @@ from __future__ import annotations
 
 import abc
 import typing
+from dataclasses import asdict, dataclass
+from enum import Enum
+from http import HTTPStatus
 
-from ..libs import inspect_utils
+from ..libs import dictionary, inspect_utils
 
 SCOPE_LOCAL = 'local'
 SCOPE_PUBLIC = 'public'
 SCOPE_SECURE = 'secure'
+
+
+@dataclass
+class Spec:
+    @dataclass
+    class Request:
+        @dataclass
+        class PropertieAttributeSchema:
+            class Type(Enum):
+                STRING = 'string'
+                INT = 'integer'
+                ARRAY = 'array'
+                # TODO add other type
+            type: Spec.Request.PropertieAttributeSchema.Type
+            pattern: typing.Optional[str] = None
+            format: typing.Optional[str] = None
+            default: typing.Optional[typing.Any] = None
+            example: typing.Optional[typing.Any] = None
+            description: typing.Optional[str] = None
+            items: typing.Optional[dict] = None
+
+        @dataclass
+        class Headers:
+            properties: typing.Dict[str, Spec.Request.PropertieAttributeSchema]
+            type: str = 'object'
+            required: typing.Optional[typing.List[str]] = None
+
+        @dataclass
+        class Params:
+            properties: typing.Dict[str, Spec.Request.PropertieAttributeSchema]
+            type: str = 'object'
+
+        @dataclass
+        class Resources:
+            properties: typing.Dict[str, Spec.Request.PropertieAttributeSchema]
+            type: str = 'object'
+            required: typing.Optional[typing.List[str]] = None
+            dollar_sign_schema: typing.Optional[str] = None
+
+        headers: typing.Optional[Spec.Request.Headers] = None
+        params: typing.Optional[Spec.Request.Params] = None
+        resources: typing.Optional[Spec.Request.Resources] = None
+
+    @dataclass
+    class Response:
+        @dataclass
+        class Normal:
+            codes: typing.Union[typing.List[int], typing.Tuple[int]] = (HTTPStatus.OK.value,)
+
+        normal: typing.Optional[Spec.Response.Normal] = Normal()
+
+    request: typing.Optional[Spec.Request] = None
+    response: typing.Optional[Spec.Response] = Response()
+
+    def to_dict(self, empty_the_value_of_none: bool = True) -> dict:
+        dict_of_self = dictionary.rename_now_key_to_new_key(asdict(self), now_key='dollar_sign_schema', new_key='$schema')
+        if empty_the_value_of_none:
+            return dictionary.empty_the_select_value(dict_of_self, select_value=None)
+        return dict_of_self
 
 
 class BaseHeader(abc.ABC):
@@ -32,6 +94,7 @@ class Setting(object):
         name: typing.Optional[str] = None,
         version: int = 1,
         update: typing.Optional[str] = None,
+        spec: Spec = Spec(),
     ) -> None:
         if transaction is None:
             transaction = Transaction(enable=False)
@@ -55,6 +118,7 @@ class Setting(object):
         self.name = name
         self.version = version
         self.update = update
+        self.spec = spec.to_dict()
 
 
 class Transaction(object):
