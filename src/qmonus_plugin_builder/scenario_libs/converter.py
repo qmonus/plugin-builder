@@ -26,6 +26,7 @@ class ScenarioYAML(object):
         request_timeout: int,
         connect_timeout: int,
         routing_auto_generation_mode: bool,
+        spec: dict,
     ) -> None:
         self.category = category
         self.name = name
@@ -43,6 +44,7 @@ class ScenarioYAML(object):
         self.routing_options = {
             "scope": scope
         }
+        self.spec: dict = spec
 
         self.global_variables: typing.Dict[str, GlobalVariableYAML] = {}
         self.transaction: typing.Any = {}
@@ -50,13 +52,6 @@ class ScenarioYAML(object):
 
         # Not supported
         self.variable_groups: typing.Any = []
-        self.spec: typing.Any = {
-            "response": {
-                "normal": {
-                    "codes": [200]
-                }
-            }
-        }
 
     def set_transaction(
         self,
@@ -302,6 +297,7 @@ def to_yaml(scenario_def: parser.ScenarioDefinition) -> ScenarioYAML:
         request_timeout=setting.request_timeout,
         connect_timeout=setting.connect_timeout,
         routing_auto_generation_mode=setting.routing_auto_generation_mode,
+        spec=setting.spec,
     )
 
     scenario_yaml.set_transaction(
