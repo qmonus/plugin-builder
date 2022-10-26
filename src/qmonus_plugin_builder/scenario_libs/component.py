@@ -67,6 +67,7 @@ class Spec:
 
     def to_dict(self, empty_the_value_of_none: bool = True) -> dict:
         dict_of_self = dictionary.rename_now_key_to_new_key(asdict(self), now_key='dollar_sign_schema', new_key='$schema')
+        dict_of_self = dictionary.enum_to_value(dict_of_self)
         if empty_the_value_of_none:
             return dictionary.empty_the_select_value(dict_of_self, select_value=None)
         return dict_of_self
