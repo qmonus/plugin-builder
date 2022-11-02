@@ -37,11 +37,13 @@ class Spec:
             properties: typing.Dict[str, Spec.Request.PropertieAttributeSchema]
             type: str = 'object'
             required: typing.Optional[typing.List[str]] = None
+            dollar_sign_schema: typing.Optional[str] = None
 
         @dataclass
         class Params:
             properties: typing.Dict[str, Spec.Request.PropertieAttributeSchema]
             type: str = 'object'
+            dollar_sign_schema: typing.Optional[str] = None
 
         @dataclass
         class Resources:
