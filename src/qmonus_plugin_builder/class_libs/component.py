@@ -1,18 +1,26 @@
 from __future__ import annotations
+
 import abc
-import typing
+import base64
 import functools
 import inspect
-
+import typing
+import uuid
 
 _TBaseClass = typing.TypeVar("_TBaseClass", bound="BaseClass")
 
 
 class BaseClass(abc.ABC):
-    def __init__(self) -> None:
-        self.instance: str
-        self.xid: str
-        self.xname: str
+    @classmethod
+    def __new_instance__(cls):
+        s = "{}:{}".format(cls.__name__, uuid.uuid1().hex)
+        return base64.b64encode(s.encode("utf-8")).decode("utf-8")
+
+    def __init__(self, **kwargs) -> None:
+        # new instance conforms to qmonus sdk lab's specs
+        self.instance: str = kwargs.get('xid', self.__new_instance__())
+        self.xid: typing.Optional[str] = kwargs.get('xid', None)
+        self.xname: typing.Optional[str] = kwargs.get('xname', None)
 
     @abc.abstractmethod
     def __setting__(self) -> Setting:

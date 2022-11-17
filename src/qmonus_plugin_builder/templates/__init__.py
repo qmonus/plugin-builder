@@ -188,6 +188,7 @@ class {{ class_definition.name }}(
         {% for variable in class_definition.variables_with_defaults %}
         {{ variable.name }}: {{ variable.type }} = {{ variable.default }},
         {% endfor %}
+        **kwargs
     ):
         # Automatically Generated
 
@@ -197,7 +198,7 @@ class {{ class_definition.name }}(
         {% for variable in class_definition.variables_with_defaults %}
         self.{{ variable.name }}: {{ variable.type }} = {{ variable.name }}
         {% endfor %}
-        pass
+        super().__init__(**kwargs)
 
     {% if class_definition.variables_without_defaults|length > 0 or class_definition.variables_with_defaults|length > 0 %}
     @classmethod
