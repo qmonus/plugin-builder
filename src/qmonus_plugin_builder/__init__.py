@@ -1,20 +1,22 @@
 __version__ = '1.0.0'
 
-import logging
-import typing
-import json
-import sys
 import importlib
+import json
+import logging
 import pathlib
 import shutil
+import sys
+import typing
 
-from .libs import file_utils, str_utils
-from .scenario_libs import converter as scenario_converter
-from .daemon_libs import converter as daemon_converter
-from .class_libs import converter as class_converter, parser as class_parser, \
-    component as class_component
-from .module_libs import converter as module_converter, parser as module_parser
 from . import templates
+from .class_libs import component as class_component
+from .class_libs import converter as class_converter
+from .class_libs import parser as class_parser
+from .daemon_libs import converter as daemon_converter
+from .libs import file_utils, str_utils
+from .module_libs import converter as module_converter
+from .module_libs import parser as module_parser
+from .scenario_libs import converter as scenario_converter
 
 logger = logging.getLogger(__name__)
 
@@ -85,12 +87,15 @@ def update(project_path: str) -> None:
                               variables={"import_stmts": module_import_stmts}))
 
     """Create libs.model.py"""
+    # Create temporal model.py
     model_path = libs_path.joinpath('model.py')
     logger.info(f"Creating '{str(model_path)}")
     file_utils.create_file(
         file_path=model_path,
-        data=str_utils.render(template=templates.MODEL_TEMPLATE,
-                              variables={"class_names": class_names}))
+        data=str_utils.render(
+            template=templates.MODEL_TEMPLATE,
+            variables={
+                "class_definitions": []}))
 
     """Create libs.scenario_context.py"""
     lib_path = libs_path.joinpath('scenario_context.py')
@@ -174,17 +179,18 @@ def update(project_path: str) -> None:
                               variables={"class_names": class_names}))
 
     # Import atom first
-    importlib.import_module(f'qmonus_sdk_plugins.libs.atom')
+    importlib.import_module('qmonus_sdk_plugins.libs.atom')
 
     # Create classes.py
     class_definitions = class_parser.get_definitions(qmonus_sdk_plugins_path)
     class_def_dicts = []
+    class_def_dict_per_class_name = {}
     for class_definition in class_definitions:
         # extends
         if class_definition.setting.extends:
-            extends = [f'atom.{cls.__name__}' for cls in class_definition.setting.extends]
+            extends = [dict(module=f"atom.{cls.__name__}", name=cls.__name__) for cls in class_definition.setting.extends]
         else:
-            extends = ['comp.BaseClass']
+            extends = [dict(module='comp.BaseClass', name='BaseClass')]
 
         # variables
         variables_without_defaults = []
@@ -256,15 +262,34 @@ def update(project_path: str) -> None:
             "name": class_definition.name,
             "variables_without_defaults": variables_without_defaults,
             "variables_with_defaults": variables_with_defaults,
+            "extend_class_definitions": [],
         }
         class_def_dicts.append(class_def_dict)
+        class_def_dict_per_class_name[class_def_dict['name']] = class_def_dict
 
+    for class_def_dict in class_def_dicts:
+        for extend in class_def_dict['extends']:
+            if class_def_dict_per_class_name.get(extend.get('name')):
+                class_def_dict['extend_class_definitions'].append(class_def_dict_per_class_name[extend.get('name')])
+
+    """Recreating libs.classes.py"""
     logger.info(f"Recreating '{str(classes_path)}")
     file_utils.create_file(
         file_path=classes_path,
         data=str_utils.render(
             template=templates.CLASSES_FULL_TEMPLATE,
             variables={"class_definitions": class_def_dicts}))
+
+    """Recreating libs.model.py"""
+    model_path = libs_path.joinpath('model.py')
+    logger.info(f"Recreating '{str(model_path)}")
+    file_utils.create_file(
+        file_path=model_path,
+        data=str_utils.render(
+            template=templates.MODEL_TEMPLATE,
+            variables={"class_definitions": class_def_dicts}
+        )
+    )
 
 
 def _convert_default(default: typing.Optional[str]) -> typing.Optional[str]:

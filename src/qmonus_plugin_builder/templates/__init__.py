@@ -111,8 +111,24 @@ import sqlalchemy
 metadata = sqlalchemy.MetaData()
 
 
-{% for class_name in class_names %}
-{{ class_name }} = sqlalchemy.Table("{{ class_name }}", metadata)
+{% for class_definition in class_definitions %}
+{{ class_definition.name }} = sqlalchemy.Table(
+    "{{ class_definition.name }}", metadata,
+    {% for variable in class_definition.variables_without_defaults %}
+    sqlalchemy.Column("{{ variable.name }}"),
+    {% endfor %}
+    {% for variable in class_definition.variables_with_defaults %}
+    sqlalchemy.Column("{{ variable.name }}"),
+    {% endfor %}
+    {% for extend_class_definition in class_definition.extend_class_definitions %}
+    {% for variable in extend_class_definition.variables_without_defaults %}
+    sqlalchemy.Column("{{ variable.name }}"),
+    {% endfor %}
+    {% for variable in extend_class_definition.variables_with_defaults %}
+    sqlalchemy.Column("{{ variable.name }}"),
+    {% endfor %}
+    {% endfor %}
+)
 
 {% endfor %}
 
@@ -161,7 +177,7 @@ from qmonus_sdk_plugins.libs.class_globals import *
 {% for class_definition in class_definitions %}
 class {{ class_definition.name }}(
     {% for extend in class_definition.extends %}
-    {{ extend }},
+    {{ extend.module }},
     {% endfor %}
 ):
     def __init__(
