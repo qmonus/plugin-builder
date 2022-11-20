@@ -18,7 +18,7 @@ class BaseClass(abc.ABC):
 
     def __init__(self, **kwargs) -> None:
         # new instance conforms to qmonus sdk lab's specs
-        self.instance: str = kwargs.get('xid', self.__new_instance__())
+        self.instance: str = kwargs.get('instance', self.__new_instance__())
         self.xid: typing.Optional[str] = kwargs.get('xid', None)
         self.xname: typing.Optional[str] = kwargs.get('xname', None)
 
