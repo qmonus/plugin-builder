@@ -85,10 +85,7 @@ def get_definitions(module_path: pathlib.Path) -> typing.List[ClassDefinition]:
         if not issubclass(class_.__bases__[0], comp.BaseClass):
             raise exceptions.ClassError(f"Invalid base class '{class_.__bases__[0]}' for 'Class' in '{module.__name__}'")
 
-        if hasattr(class_, '__create_dummy_instance__'):
-            class_instance = class_.__create_dummy_instance__()
-        else:
-            class_instance = class_()
+        class_instance = class_.__create_dummy_instance__()
 
         # setting
         setting = class_instance.__setting__()

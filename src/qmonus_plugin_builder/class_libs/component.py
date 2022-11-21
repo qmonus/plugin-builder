@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 
 class BaseClass(abc.ABC):
     @classmethod
-    def __create_dummy_instance__(cls, **kwargs):
-        attributes = kwargs
+    def __create_dummy_instance__(cls):
+        attributes = {}
         for name in cls.__init__.__annotations__.keys():
-            attributes[name] = kwargs.get(name, None)
+            attributes[name] = None
         return cls(**attributes)
 
     @classmethod
