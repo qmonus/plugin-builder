@@ -1,15 +1,16 @@
 from __future__ import annotations
-import types
-import typing
-import logging
-import inspect
+
+import collections
 import importlib
+import inspect
+import logging
 import pathlib
 import re
-import collections
+import types
+import typing
 
-from ..libs import inspect_utils, sort_lib
 from .. import exceptions
+from ..libs import inspect_utils, sort_lib
 from . import component as comp
 
 logger = logging.getLogger(__name__)
@@ -22,8 +23,9 @@ def _sort_class_definitions(
     map: typing.Dict[str, ClassDefinition] = {}
     for class_definition in class_definitions:
         class_name = class_definition.name
-        parent_class_names = [cls.__name__ for cls in class_definition.setting.extends] \
-                             if class_definition.setting.extends is not None else []
+        parent_class_names = [
+            cls.__name__ for cls in class_definition.setting.extends
+        ] if class_definition.setting.extends is not None else []
         graph[class_name] = parent_class_names
         map[class_name] = class_definition
 
@@ -32,7 +34,7 @@ def _sort_class_definitions(
     sorted_class_definitions: typing.List[ClassDefinition] = []
     for sorted_class_name in sorted_class_names:
         sorted_class_definitions.append(map[sorted_class_name])
-    
+
     return sorted_class_definitions
 
 
@@ -46,7 +48,7 @@ def get_files(module_path: pathlib.Path) -> typing.List[pathlib.Path]:
             continue
         logger.info(f"Class file detected: '{str(file)}'")
         files.append(file)
-    
+
     # Check duplication
     counter = collections.Counter([file.stem for file in files])
     for name, count in counter.items():
@@ -80,13 +82,10 @@ def get_definitions(module_path: pathlib.Path) -> typing.List[ClassDefinition]:
         if len(class_.__bases__) != 1:
             raise exceptions.ClassError(f"Base class name must be 'classes.{class_name}' for '{class_name}'")
 
-        if class_.__bases__[0].__name__ != class_name:
-            raise exceptions.ClassError(f"Base class name must be 'classes.{class_name}' for '{class_name}'")
-
         if not issubclass(class_.__bases__[0], comp.BaseClass):
             raise exceptions.ClassError(f"Invalid base class '{class_.__bases__[0]}' for 'Class' in '{module.__name__}'")
 
-        class_instance = class_()
+        class_instance = class_.__create_dummy_instance__()
 
         # setting
         setting = class_instance.__setting__()

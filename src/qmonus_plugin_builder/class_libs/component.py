@@ -4,13 +4,22 @@ import abc
 import base64
 import functools
 import inspect
+import logging
 import typing
 import uuid
 
 _TBaseClass = typing.TypeVar("_TBaseClass", bound="BaseClass")
+logger = logging.getLogger(__name__)
 
 
 class BaseClass(abc.ABC):
+    @classmethod
+    def __create_dummy_instance__(cls):
+        attributes = {}
+        for name in cls.__init__.__annotations__.keys():
+            attributes[name] = None
+        return cls(**attributes)
+
     @classmethod
     def __new_instance__(cls):
         s = "{}:{}".format(cls.__name__, uuid.uuid1().hex)
@@ -43,6 +52,31 @@ class BaseClass(abc.ABC):
         delay_seconds: int = 0,
     ) -> typing.Any:
         pass
+
+    @classmethod
+    async def load(
+        cls,
+        key,
+        conn=None,
+        shallow=False
+    ) -> 'BaseClass':
+        raise NotImplementedError
+
+    @classmethod
+    async def retrieve(
+        cls,
+        conn=None,
+        shallow=False,
+        order_by=[],
+        offset=0,
+        limit=None,
+        *,
+        instance=None,
+        xid=None,
+        xname=None,
+        **kwargs,
+    ) -> typing.List['BaseClass']:
+        raise NotImplementedError
 
     def __await__(self: _TBaseClass) -> typing.Generator[None, None, _TBaseClass]:
         yield
@@ -118,28 +152,28 @@ class ARRAY_OF_CLASS(BaseType):
 
 class Setting(object):
     def __init__(
-        self, 
+        self,
         identifier: typing.Optional[Identifier] = None,
         local_fields: typing.Optional[typing.List[LocalField]] = None,
         ref_fields: typing.Optional[typing.List[RefField]] = None,
-        persistence: bool = True, 
-        abstract: bool = False, 
+        persistence: bool = True,
+        abstract: bool = False,
         extends: typing.Optional[typing.List[typing.Type[BaseClass]]] = None,
-        api_generation: bool = False, 
+        api_generation: bool = False,
         api_auto_response: typing.Optional[bool] = None,
         scope: typing.Optional[str] = None,
         workspace: typing.Optional[str] = None,
-        category: typing.Optional[str] = None, 
+        category: typing.Optional[str] = None,
         version: int = 1,
-        created_at: typing.Optional[str] = None, 
+        created_at: typing.Optional[str] = None,
         update: typing.Optional[str] = None,
     ) -> None:
         if workspace == '':
             raise ValueError("workspace must not be empty")
-        
+
         if local_fields is None:
             local_fields = []
-        
+
         if ref_fields is None:
             ref_fields = []
 
@@ -167,11 +201,11 @@ class Field(object):
 
 class Identifier(Field):
     def __init__(
-        self, 
+        self,
         name: str,
-        type: BaseType, 
+        type: BaseType,
         persistence: bool = True,
-        immutable: bool = True, 
+        immutable: bool = True,
         default: typing.Optional[str] = None,
         metadata: typing.Optional[typing.Dict[typing.Any, typing.Any]] = None,
         dbtype: typing.Optional[str] = None,
@@ -192,8 +226,8 @@ class Identifier(Field):
 
 class FSM(object):
     def __init__(
-        self, 
-        execution_method: str, 
+        self,
+        execution_method: str,
         success_transition: typing.Optional[str] = None,
         failure_transition: typing.Optional[str] = None,
         status_value: typing.Optional[str] = None,
@@ -210,13 +244,13 @@ class FSM(object):
 
 class LocalField(Field):
     def __init__(
-        self, 
+        self,
         name: str,
-        type: BaseType, 
+        type: BaseType,
         persistence: bool = True,
-        nullable: bool = True, 
-        immutable: bool = False, 
-        unique: bool = False, 
+        nullable: bool = True,
+        immutable: bool = False,
+        unique: bool = False,
         default: typing.Optional[str] = None,
         enum: typing.Optional[typing.List[str]] = None,
         format: typing.Optional[typing.Union[typing.Dict[typing.Any, typing.Any], str]] = None,
@@ -244,9 +278,9 @@ class LocalField(Field):
 
 class RefField(Field):
     def __init__(
-        self, 
+        self,
         name: str,
-        type: BaseType, 
+        type: BaseType,
         ref_class: typing.Type[BaseClass],
         ref_class_field: str,
         persistence: bool = True,
@@ -268,6 +302,7 @@ class RefField(Field):
 
 # InstanceMethod
 F = typing.TypeVar('F', bound=typing.Callable[..., typing.Any])
+
 
 def instance_method(
     propagation_mode: bool = False,
@@ -313,7 +348,7 @@ def instance_method(
 
 class InstanceMethod(object):
     def __init__(
-        self, 
+        self,
         propagation_mode: bool,
         topdown: bool,
         auto_rollback: bool,

@@ -30,8 +30,8 @@ def init(project_path: str) -> None:
 
     init_files_path = pathlib.Path(__file__).joinpath('../init_files/qmonus_sdk_plugins').resolve()
     shutil.copytree(
-        src=init_files_path, 
-        dst=qmonus_sdk_plugins_path, 
+        src=init_files_path,
+        dst=qmonus_sdk_plugins_path,
         ignore=shutil.ignore_patterns('__pycache__'),
         dirs_exist_ok=True,
     )
