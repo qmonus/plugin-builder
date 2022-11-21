@@ -25,7 +25,6 @@ lock_keys: list = comp.global_variable()
 
 
 # Define scenario commands with 'Command{0, 1, 2, ...}' classes.
-# Command class must inherit 'RequestValidation' or 'Script'.
 class Command0(comp.RequestValidation):
     def __setting__(self):
         return comp.RequestValidationSetting()
@@ -74,8 +73,8 @@ class Command1(comp.Script):
 
     async def code(self):
         user = atom.User(
-            id=id, 
-            name=req['name'], 
+            id=id,
+            name=req['name'],
             description=req['description'],
             type=context.constants.USER_TYPE_MEMBER,
         )

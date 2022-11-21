@@ -6,7 +6,6 @@ from qmonus_sdk_plugins.libs.class_globals import *
 
 # Define a class.
 # The filename must be '{class-name}.py'.
-# The defined class must inherit 'classes.{class-name}'.
 # Use '@classmethod' decorator to define a class method.
 # Use '@comp.instance_method()' to define an instance method.
 class User(classes.User):

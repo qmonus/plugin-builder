@@ -17,6 +17,7 @@ class User(
         description: str,
         type: str,
         id: typing.Optional[str] = None,
+        **kwargs
     ):
         # Automatically Generated
 
@@ -24,7 +25,7 @@ class User(
         self.description: str = description
         self.type: str = type
         self.id: typing.Optional[str] = id
-        pass
+        super().__init__(**kwargs)
 
     @classmethod
     async def load(

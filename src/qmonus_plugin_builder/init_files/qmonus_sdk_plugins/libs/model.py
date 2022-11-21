@@ -9,5 +9,11 @@ import sqlalchemy
 metadata = sqlalchemy.MetaData()
 
 
-User = sqlalchemy.Table("User", metadata)
+User = sqlalchemy.Table(
+    "User", metadata,
+    sqlalchemy.Column("name"),
+    sqlalchemy.Column("description"),
+    sqlalchemy.Column("type"),
+    sqlalchemy.Column("id"),
+)
 
