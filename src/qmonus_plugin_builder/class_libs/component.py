@@ -324,6 +324,9 @@ class InstanceMethod(object):
         self.timeout = timeout
 
 
+F = typing.TypeVar('F', bound=typing.Callable[..., typing.Any])
+
+
 class instance_method(InstanceMethod):
     def __init__(
         self,
@@ -343,19 +346,18 @@ class instance_method(InstanceMethod):
             timeout=timeout,
         )
 
-    def __call__(self, func):
+    def __call__(self, func) -> F:
         global instance_method_per_qualname
         instance_method_per_qualname[func.__qualname__] = self
 
         @functools.wraps(func)
-        def wrapper(*args: typing.Any, **kwargs: typing.Any) -> None:
-            func(*args, **kwargs)
+        def wrapper(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+            return func(*args, **kwargs)
 
         @functools.wraps(func)
-        async def async_wrapper(*args: typing.Any, **kwargs: typing.Any) -> None:
-            await func(*args, **kwargs)
+        async def async_wrapper(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+            return await func(*args, **kwargs)
 
-        F = typing.TypeVar('F', bound=typing.Callable[..., typing.Any])
         if inspect.iscoroutinefunction(func):
             return typing.cast(F, async_wrapper)
         else:
