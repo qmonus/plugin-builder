@@ -99,6 +99,8 @@ def get_definitions(module_path: pathlib.Path) -> typing.List[ClassDefinition]:
         for k, v in vars(class_).items():
             # class method
             if isinstance(v, classmethod):
+                if k == '__create_dummy_instance__':
+                    continue
                 class_method = getattr(class_instance, k)
                 code = inspect.getsource(class_method)
                 code = inspect_utils.outdent(code)
