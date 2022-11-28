@@ -346,7 +346,7 @@ class instance_method(InstanceMethod):
             timeout=timeout,
         )
 
-    def __call__(self, func) -> F:
+    def __call__(self, func: F) -> F:
         global instance_method_per_qualname
         instance_method_per_qualname[func.__qualname__] = self
 
