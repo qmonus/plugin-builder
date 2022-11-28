@@ -11,6 +11,8 @@ import uuid
 _TBaseClass = typing.TypeVar("_TBaseClass", bound="BaseClass")
 logger = logging.getLogger(__name__)
 
+instance_method_per_qualname = {}
+
 
 class BaseClass(abc.ABC):
     @classmethod
@@ -30,6 +32,9 @@ class BaseClass(abc.ABC):
         self.instance: str = kwargs.get('instance', self.__new_instance__())
         self.xid: typing.Optional[str] = kwargs.get('xid', None)
         self.xname: typing.Optional[str] = kwargs.get('xname', None)
+
+    def __get_instance_method_by_qualname__(self, __qualname__: str) -> typing.Optional[InstanceMethod]:
+        return instance_method_per_qualname.get(__qualname__)
 
     @abc.abstractmethod
     def __setting__(self) -> Setting:
@@ -301,51 +306,6 @@ class RefField(Field):
 
 
 # InstanceMethod
-F = typing.TypeVar('F', bound=typing.Callable[..., typing.Any])
-
-
-def instance_method(
-    propagation_mode: bool = False,
-    topdown: bool = True,
-    auto_rollback: bool = True,
-    multiplexable_number: int = 1,
-    field_order: str = 'ascend',
-    timeout: typing.Optional[int] = None,
-) -> typing.Callable[[F], F]:
-    def decorator(func: F) -> F:
-        class _InstanceMethod(InstanceMethod):
-            def __init__(self) -> None:
-                super().__init__(
-                    propagation_mode=propagation_mode,
-                    topdown=topdown,
-                    auto_rollback=auto_rollback,
-                    multiplexable_number=multiplexable_number,
-                    field_order=field_order,
-                    timeout=timeout)
-
-            @functools.wraps(func)
-            def wrapper(self, *args: typing.Any, **kwargs: typing.Any) -> None:
-                func(*args, **kwargs)
-
-            @functools.wraps(func)
-            async def async_wrapper(self, *args: typing.Any, **kwargs: typing.Any) -> None:
-                await func(*args, **kwargs)
-
-        # def _to_any(v) -> typing.Any:
-        #     return v
-
-        wrap = _InstanceMethod()
-        if inspect.iscoroutinefunction(func):
-            # wrapper: F = _to_any(wrap.async_wrapper)
-            # return wrapper
-            return typing.cast(F, wrap.async_wrapper)
-        else:
-            # wrapper: F = _to_any(wrap.wrapper)
-            # return wrapper
-            return typing.cast(F, wrap.wrapper)
-    return decorator
-
-
 class InstanceMethod(object):
     def __init__(
         self,
@@ -362,3 +322,43 @@ class InstanceMethod(object):
         self.multiplexable_number = multiplexable_number
         self.field_order = field_order
         self.timeout = timeout
+
+
+F = typing.TypeVar('F', bound=typing.Callable[..., typing.Any])
+
+
+class instance_method(InstanceMethod):
+    def __init__(
+        self,
+        propagation_mode: bool = False,
+        topdown: bool = True,
+        auto_rollback: bool = True,
+        multiplexable_number: int = 1,
+        field_order: str = 'ascend',
+        timeout: typing.Optional[int] = None,
+    ):
+        super().__init__(
+            propagation_mode=propagation_mode,
+            topdown=topdown,
+            auto_rollback=auto_rollback,
+            multiplexable_number=multiplexable_number,
+            field_order=field_order,
+            timeout=timeout,
+        )
+
+    def __call__(self, func: F) -> F:
+        global instance_method_per_qualname
+        instance_method_per_qualname[func.__qualname__] = self
+
+        @functools.wraps(func)
+        def wrapper(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+            return func(*args, **kwargs)
+
+        @functools.wraps(func)
+        async def async_wrapper(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+            return await func(*args, **kwargs)
+
+        if inspect.iscoroutinefunction(func):
+            return typing.cast(F, async_wrapper)
+        else:
+            return typing.cast(F, wrapper)

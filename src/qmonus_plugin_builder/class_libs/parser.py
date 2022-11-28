@@ -99,6 +99,8 @@ def get_definitions(module_path: pathlib.Path) -> typing.List[ClassDefinition]:
         for k, v in vars(class_).items():
             # class method
             if isinstance(v, classmethod):
+                if k == '__create_dummy_instance__':
+                    continue
                 class_method = getattr(class_instance, k)
                 code = inspect.getsource(class_method)
                 code = inspect_utils.outdent(code)
@@ -107,13 +109,18 @@ def get_definitions(module_path: pathlib.Path) -> typing.List[ClassDefinition]:
                 class_methods.append(ClassMethodDefinition(method_body=method_body))
 
             # instance method
-            elif inspect.ismethod(v) and isinstance(v.__self__, comp.InstanceMethod):
-                instance_method = getattr(class_instance, k)
+            # New in python 3.8. Use assignment expressions
+            # https://docs.python.org/ja/3/whatsnew/3.8.html#assignment-expressions
+            elif inspect.isfunction(v) and (
+                instance_method := getattr(class_instance, k)
+            ) and (
+                comp_instance_method := class_instance.__get_instance_method_by_qualname__(v.__qualname__)
+            ) and isinstance(comp_instance_method, comp.InstanceMethod):
                 code = inspect.getsource(instance_method)
                 code = inspect_utils.outdent(code)
                 is_coroutine = inspect.iscoroutinefunction(instance_method)
                 method_body = _remove_decorator(code=code, is_coroutine=is_coroutine)
-                instance: comp.InstanceMethod = instance_method.__self__
+                instance: comp.InstanceMethod = comp_instance_method
                 instance_methods.append(
                     InstanceMethodDefinition(
                         method_body=method_body,
