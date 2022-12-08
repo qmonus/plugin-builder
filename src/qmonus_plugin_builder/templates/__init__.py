@@ -128,6 +128,9 @@ metadata = sqlalchemy.MetaData()
     sqlalchemy.Column("{{ variable.name }}"),
     {% endfor %}
     {% endfor %}
+    sqlalchemy.Column("instance"),
+    sqlalchemy.Column("xid"),
+    sqlalchemy.Column("xname"),
 )
 
 {% endfor %}
