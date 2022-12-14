@@ -36,6 +36,35 @@ class BaseClass(abc.ABC):
     def __get_instance_method_by_qualname__(self, __qualname__: str) -> typing.Optional[InstanceMethod]:
         return instance_method_per_qualname.get(__qualname__)
 
+    @classmethod
+    def fieldnames(cls, **kwargs):
+        dummy_instance = cls.__create_dummy_instance__()
+        base_field_names = ['instance', 'xid', 'xname']
+
+        def get_field_names(_class, instance):
+            super_class_field_names = []
+            if BaseClass not in _class.__bases__:
+                for base_class in _class.__bases__:
+                    super_class_field_names = get_field_names(base_class, base_class.__create_dummy_instance__())
+            identifier_name = list({instance.key_field} - {None})
+            setting = instance.__setting__()
+            return super_class_field_names + identifier_name + [lf.name for lf in setting.local_fields + setting.ref_fields]
+        return base_field_names + get_field_names(cls, dummy_instance)
+
+    @property
+    def dictionary(self) -> dict:
+        dictionary = {}
+        for name in self.fieldnames():
+            if getattr(self, name, None) is not None:
+                dictionary[name] = getattr(self, name)
+            if hasattr(dictionary.get(name), 'dictionary'):
+                dictionary[name] = dictionary[name].dictionary
+        return dictionary
+
+    @property
+    def key_field(self) -> str:
+        return self.__setting__().identifier.name
+
     @abc.abstractmethod
     def __setting__(self) -> Setting:
         pass
