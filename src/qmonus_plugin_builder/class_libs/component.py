@@ -15,6 +15,13 @@ instance_method_per_qualname = {}
 
 
 class BaseClass(abc.ABC):
+    # qmonus sdk では classが保持している属性でkey_fieldというものがあります
+    # プライマリキーの名前を保持する属性なのですが、それを自動的に保持させるには
+    # __setting__がインスタンスメソッドではなくstaticmethodもしくはclassmethodである必要があるため
+    # 現時点でbuilderで実装することができないため、key_fuildを利用したい場合は、BaseClassを継承した
+    # 各class側で適宜設定する対応を行なってください。
+    key_field: typing.Optional[str] = None
+
     @classmethod
     def __create_dummy_instance__(cls):
         attributes = {}
@@ -32,6 +39,12 @@ class BaseClass(abc.ABC):
         self.instance: str = kwargs.get('instance', self.__new_instance__())
         self.xid: typing.Optional[str] = kwargs.get('xid', None)
         self.xname: typing.Optional[str] = kwargs.get('xname', None)
+        # instance method の dictionary では fieldnames を利用しているのですが
+        # fieldnames内ではkey_fieldを利用しているため、本来このような処理を書くべきではないが
+        # instanceが生成されたタイミングでkey_fieldが設定されていない場合はkey_fieldを設定するようにしている
+        if not self.__class__.key_field:
+            if getattr(self.__setting__(), 'identifier'):
+                self.__class__.key_field = self.__setting__().identifier.name
 
     def __get_instance_method_by_qualname__(self, __qualname__: str) -> typing.Optional[InstanceMethod]:
         return instance_method_per_qualname.get(__qualname__)
@@ -59,11 +72,15 @@ class BaseClass(abc.ABC):
                 dictionary[name] = getattr(self, name)
             if hasattr(dictionary.get(name), 'dictionary'):
                 dictionary[name] = dictionary[name].dictionary
+            elif isinstance(dictionary.get(name), list):
+                l: list = dictionary[name].__class__()
+                for v in dictionary.get(name):
+                    if hasattr(v, 'dictionary'):
+                        l.append(v.dictionary)
+                    else:
+                        l.append(v)
+                dictionary[name] = l
         return dictionary
-
-    @property
-    def key_field(self) -> str:
-        return self.__setting__().identifier.name
 
     @abc.abstractmethod
     def __setting__(self) -> Setting:
