@@ -43,11 +43,15 @@ class BaseClass(abc.ABC):
         # fieldnames内ではkey_fieldを利用しているため、本来このような処理を書くべきではないが
         # instanceが生成されたタイミングでkey_fieldが設定されていない場合はkey_fieldを設定するようにしている
         if not self.__class__.key_field:
-            if getattr(self.__setting__(), 'identifier'):
-                self.__class__.key_field = self.__setting__().identifier.name
+            self.__class__.key_field = self.to_key_field()
 
     def __get_instance_method_by_qualname__(self, __qualname__: str) -> typing.Optional[InstanceMethod]:
         return instance_method_per_qualname.get(__qualname__)
+
+    def to_key_field(self) -> typing.Optional[str]:
+        if getattr(self.__setting__(), 'identifier'):
+            return self.__setting__().identifier.name
+        return None
 
     @classmethod
     def fieldnames(cls, **kwargs):
@@ -59,7 +63,7 @@ class BaseClass(abc.ABC):
             if BaseClass not in _class.__bases__:
                 for base_class in _class.__bases__:
                     super_class_field_names = get_field_names(base_class, base_class.__create_dummy_instance__())
-            identifier_name = list({instance.key_field} - {None})
+            identifier_name = list({instance.to_key_field()} - {None})
             setting = instance.__setting__()
             return super_class_field_names + identifier_name + [lf.name for lf in setting.local_fields + setting.ref_fields]
         return base_field_names + get_field_names(cls, dummy_instance)
