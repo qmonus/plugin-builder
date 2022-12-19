@@ -15,6 +15,13 @@ instance_method_per_qualname = {}
 
 
 class BaseClass(abc.ABC):
+    # qmonus sdk では classが保持している属性でkey_fieldというものがあります
+    # プライマリキーの名前を保持する属性なのですが、それを自動的に保持させるには
+    # __setting__がインスタンスメソッドではなくstaticmethodもしくはclassmethodである必要があるため
+    # 現時点でbuilderで実装することができないため、key_fuildを利用したい場合は、BaseClassを継承した
+    # 各class側で適宜設定する対応を行なってください。
+    key_field: typing.Optional[str] = None
+
     @classmethod
     def __create_dummy_instance__(cls):
         attributes = {}
@@ -35,6 +42,44 @@ class BaseClass(abc.ABC):
 
     def __get_instance_method_by_qualname__(self, __qualname__: str) -> typing.Optional[InstanceMethod]:
         return instance_method_per_qualname.get(__qualname__)
+
+    def to_key_field(self) -> typing.Optional[str]:
+        if self.__setting__().identifier:
+            return self.__setting__().identifier.name
+        return None
+
+    @classmethod
+    def fieldnames(cls, **kwargs):
+        dummy_instance = cls.__create_dummy_instance__()
+        base_field_names = ['instance', 'xid', 'xname']
+
+        def get_field_names(_class, instance):
+            super_class_field_names = []
+            if BaseClass not in _class.__bases__:
+                for base_class in _class.__bases__:
+                    super_class_field_names = get_field_names(base_class, base_class.__create_dummy_instance__())
+            identifier_name = list({instance.to_key_field()} - {None})
+            setting = instance.__setting__()
+            return super_class_field_names + identifier_name + [lf.name for lf in setting.local_fields + setting.ref_fields]
+        return base_field_names + get_field_names(cls, dummy_instance)
+
+    @property
+    def dictionary(self) -> dict:
+        dictionary = {}
+        for name in self.fieldnames():
+            if getattr(self, name, None) is not None:
+                dictionary[name] = getattr(self, name)
+            if hasattr(dictionary.get(name), 'dictionary'):
+                dictionary[name] = dictionary[name].dictionary
+            elif isinstance(dictionary.get(name), list):
+                l: list = dictionary[name].__class__()
+                for v in dictionary[name]:
+                    if hasattr(v, 'dictionary'):
+                        l.append(v.dictionary)
+                    else:
+                        l.append(v)
+                dictionary[name] = l
+        return dictionary
 
     @abc.abstractmethod
     def __setting__(self) -> Setting:
