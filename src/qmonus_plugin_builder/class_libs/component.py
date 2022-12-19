@@ -39,17 +39,12 @@ class BaseClass(abc.ABC):
         self.instance: str = kwargs.get('instance', self.__new_instance__())
         self.xid: typing.Optional[str] = kwargs.get('xid', None)
         self.xname: typing.Optional[str] = kwargs.get('xname', None)
-        # instance method の dictionary では fieldnames を利用しているのですが
-        # fieldnames内ではkey_fieldを利用しているため、本来このような処理を書くべきではないが
-        # instanceが生成されたタイミングでkey_fieldが設定されていない場合はkey_fieldを設定するようにしている
-        if not self.__class__.key_field:
-            self.__class__.key_field = self.to_key_field()
 
     def __get_instance_method_by_qualname__(self, __qualname__: str) -> typing.Optional[InstanceMethod]:
         return instance_method_per_qualname.get(__qualname__)
 
     def to_key_field(self) -> typing.Optional[str]:
-        if getattr(self.__setting__(), 'identifier'):
+        if self.__setting__().identifier:
             return self.__setting__().identifier.name
         return None
 
@@ -78,7 +73,7 @@ class BaseClass(abc.ABC):
                 dictionary[name] = dictionary[name].dictionary
             elif isinstance(dictionary.get(name), list):
                 l: list = dictionary[name].__class__()
-                for v in dictionary.get(name):
+                for v in dictionary[name]:
                     if hasattr(v, 'dictionary'):
                         l.append(v.dictionary)
                     else:
