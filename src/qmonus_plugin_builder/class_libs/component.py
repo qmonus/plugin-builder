@@ -4,6 +4,7 @@ import abc
 import base64
 import functools
 import inspect
+import json
 import logging
 import typing
 import uuid
@@ -137,6 +138,35 @@ class BaseClass(abc.ABC):
 
     # def __getattr__(self, name) -> typing.Any:
     #     pass
+
+    def __iadd__(self, o):
+        """マージ時に型不一致などでsetattrに失敗した場合は無視して続行する"""
+        d = o
+        if type(o) == dict:
+            pass
+
+        elif type(o) in [str, bytes]:
+            try:
+                d = json.loads(o)
+            except Exception:
+                raise TypeError("must be dict not %r" % type(o))
+
+        else:
+            raise TypeError("must be dict not %r" % type(o))
+
+        def merge(k, v):
+            if k in self.fieldnames():
+                if getattr(self, k) != v:
+                    try:
+                        setattr(self, k, v)
+                    except Exception:
+                        pass
+
+            elif type(v) == dict:
+                [merge(_k, _v) for _k, _v in v.items()]
+
+        [merge(k, v) for k, v in d.items()]
+        return self
 
 
 class BaseType(abc.ABC):
