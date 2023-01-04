@@ -15,5 +15,8 @@ User = sqlalchemy.Table(
     sqlalchemy.Column("description"),
     sqlalchemy.Column("type"),
     sqlalchemy.Column("id"),
+    sqlalchemy.Column("instance"),
+    sqlalchemy.Column("xid"),
+    sqlalchemy.Column("xname"),
 )
 
