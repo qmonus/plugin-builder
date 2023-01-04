@@ -6,15 +6,9 @@ on:
       - "**"
     tags:
       - "**"
-    paths-ignore:
-      - "README.md"
-      - "docs/**"
   pull_request:
     branches:
       - "**"
-    paths-ignore:
-      - "README.md"
-      - "docs/**"
   schedule:
     - cron: '30 1 * * *'
 
@@ -28,9 +22,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
           architecture: "x64"
@@ -38,8 +32,7 @@ jobs:
         run: python -V
       - name: Install dependencies
         run: |
-          pip install -U pip
-          pip install poetry
-          poetry install
+          curl -sSL https://install.python-poetry.org | python3 -
+          poetry install --no-interaction
       - name: Run pytest
-        run: poetry run pytest -vvl
+        run: poetry run pytest -vx --tb=native
