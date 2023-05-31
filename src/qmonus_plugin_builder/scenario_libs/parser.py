@@ -84,7 +84,7 @@ def get_definitions(module_path: pathlib.Path) -> typing.List[ScenarioDefinition
                 _err = f"Invalid command name '{command.__class__.__name__}' in '{module.__name__.split('.')[-1]}'. " \
                        f"Corrent name is 'Command{index}'."
                 raise exceptions.ScenarioError(_err)
-        
+
         definition = ScenarioDefinition(
             name=setting.name,
             setting=setting,
