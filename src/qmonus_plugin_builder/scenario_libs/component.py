@@ -140,6 +140,7 @@ class Transaction(object):
         retry_interval: float = 0,
         timeout: typing.Optional[int] = None,
         async_: bool = True,
+        crash_recovery_policy: typing.Optional[typing.Literal['Idempotency', 'NoIdempotency']] = None
     ) -> None:
         if lock_keys is None:
             lock_keys = []
@@ -157,6 +158,7 @@ class Transaction(object):
         self.retry_interval = retry_interval
         self.timeout = timeout
         self.async_ = async_
+        self.crash_recovery_policy = crash_recovery_policy
 
 
 # Global Variables

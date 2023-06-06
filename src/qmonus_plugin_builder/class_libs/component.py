@@ -44,8 +44,9 @@ class BaseClass(abc.ABC):
         return instance_method_per_qualname.get(__qualname__)
 
     def to_key_field(self) -> typing.Optional[str]:
-        if self.__setting__().identifier:
-            return self.__setting__().identifier.name
+        identifier = self.__setting__().identifier
+        if identifier:
+            return identifier.name
         return None
 
     @classmethod

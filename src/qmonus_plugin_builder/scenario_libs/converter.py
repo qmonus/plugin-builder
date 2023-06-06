@@ -68,6 +68,7 @@ class ScenarioYAML(object):
         retry_interval: float,
         timeout: typing.Optional[int],
         async_: bool,
+        crash_recovery_policy: typing.Optional[str],
     ) -> None:
         transaction = TransactionYAML(
             enable=enable,
@@ -83,6 +84,7 @@ class ScenarioYAML(object):
             retry_interval=retry_interval,
             timeout=timeout,
             async_=async_,
+            crash_recovery_policy=crash_recovery_policy,
         )
         self.transaction = transaction
 
@@ -162,6 +164,7 @@ class TransactionYAML(object):
         retry_count: int,
         retry_interval: float,
         timeout: typing.Optional[int],
+        crash_recovery_policy: typing.Optional[str],
         async_: bool = True,
     ) -> None:
         self.enable = enable
@@ -185,6 +188,9 @@ class TransactionYAML(object):
 
             if timeout is not None:
                 self.timeout = timeout
+
+            if crash_recovery_policy is not None:
+                self.crash_recovery_policy = crash_recovery_policy
 
 
 class GlobalVariableYAML(object):
@@ -314,6 +320,7 @@ def to_yaml(scenario_def: parser.ScenarioDefinition) -> ScenarioYAML:
         retry_interval=transaction.retry_interval,
         timeout=transaction.timeout,
         async_=transaction.async_,
+        crash_recovery_policy=transaction.crash_recovery_policy,
     )
 
     for global_variable in scenario_def.global_variables:

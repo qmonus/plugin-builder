@@ -70,12 +70,13 @@ def _process_by_comparison_expression(
         if comparison_expression(dict_, key):
             process_keys.append(key)
         elif recursive:
-            if isinstance(dict_.get(key), dict):
+            dict_value = dict_.get(key)
+            if isinstance(dict_value, dict):
                 _process_by_comparison_expression(
-                    dict_.get(key), process=process, comparison_expression=comparison_expression, non_destructive=False, recursive=recursive
+                    dict_value, process=process, comparison_expression=comparison_expression, non_destructive=False, recursive=recursive
                 )
-            elif isinstance(dict_.get(key), list):
-                for value in dict_.get(key):
+            elif isinstance(dict_value, list):
+                for value in dict_value:
                     if isinstance(value, dict):
                         _process_by_comparison_expression(
                             value, process=process, comparison_expression=comparison_expression, non_destructive=False, recursive=recursive
