@@ -109,6 +109,7 @@ class ScenarioYAML(object):
         headers: typing.Optional[typing.Dict[typing.Any, typing.Any]],
         pre_process_code: typing.Optional[str],
         post_process_code: typing.Optional[str],
+        except_code: typing.Optional[str],
     ) -> None:
         command = RequestValidationCommandYAML(
             label=label,
@@ -118,6 +119,7 @@ class ScenarioYAML(object):
             headers=headers,
             pre_process_code=pre_process_code,
             post_process_code=post_process_code,
+            except_code=except_code,
         )
         self.commands.append(command)
 
@@ -205,6 +207,7 @@ class RequestValidationCommandYAML(object):
         label: typing.Optional[str],
         pre_process_code: typing.Optional[str],
         post_process_code: typing.Optional[str],
+        except_code: typing.Optional[str],
         body: typing.Optional[typing.Dict[typing.Any, typing.Any]],
         resources: typing.Optional[typing.Dict[typing.Any, typing.Any]],
         params: typing.Optional[typing.Dict[typing.Any, typing.Any]],
@@ -229,6 +232,9 @@ class RequestValidationCommandYAML(object):
             self.kwargs['aspect_options']['post'] = {
                 "process": post_process_code
             }
+
+        if except_code is not None:
+            self.kwargs['except_code'] = except_code
 
         if body is not None:
             self.kwargs['body'] = body
@@ -334,6 +340,7 @@ def to_yaml(scenario_def: parser.ScenarioDefinition) -> ScenarioYAML:
         if isinstance(command, comp.RequestValidation):
             pre_process_code = command.get_code('pre_process')
             post_process_code = command.get_code('post_process')
+            except_code = command.get_code('except_code')
             scenario_yaml.add_request_validation_command(
                 label=command.__setting__().label,
                 body=command.body(),
@@ -342,6 +349,7 @@ def to_yaml(scenario_def: parser.ScenarioDefinition) -> ScenarioYAML:
                 headers=command.headers(),
                 pre_process_code=pre_process_code,
                 post_process_code=post_process_code,
+                except_code=except_code,
             )
         elif isinstance(command, comp.Script):
             code = command.get_code('code')

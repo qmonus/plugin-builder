@@ -222,6 +222,10 @@ class RequestValidation(BaseCommand):
         """post process code (optional)"""
         pass
 
+    async def except_code(self) -> None:
+        """except code(optional)"""
+        pass
+
 
 class ScriptSetting(object):
     def __init__(
