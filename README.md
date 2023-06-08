@@ -19,7 +19,7 @@ Qmonus-SDKのPlugin開発の際、以下のようなエディタの持つ開発�
 ## インストール
 `pip install`を実行してください。venvの利用を推奨します。
 ```
-pip install -U git+https://github.com/qmonus/plugin-builder.git@1.2.0
+pip install -U git+https://github.com/qmonus/plugin-builder.git@1.3.0
 ```
 
 ## 利用方法
