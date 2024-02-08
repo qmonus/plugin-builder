@@ -108,7 +108,9 @@ class ScenarioYAML(object):
         params: typing.Optional[typing.Dict[typing.Any, typing.Any]],
         headers: typing.Optional[typing.Dict[typing.Any, typing.Any]],
         pre_process_code: typing.Optional[str],
+        pre_condition_code: typing.Optional[str],
         post_process_code: typing.Optional[str],
+        post_condition_code: typing.Optional[str],
         except_code: typing.Optional[str],
     ) -> None:
         command = RequestValidationCommandYAML(
@@ -118,7 +120,9 @@ class ScenarioYAML(object):
             params=params,
             headers=headers,
             pre_process_code=pre_process_code,
+            pre_condition_code=pre_condition_code,
             post_process_code=post_process_code,
+            post_condition_code=post_condition_code,
             except_code=except_code,
         )
         self.commands.append(command)
@@ -130,7 +134,9 @@ class ScenarioYAML(object):
         cancellable: bool,
         cancel_code: typing.Optional[str],
         pre_process_code: typing.Optional[str],
+        pre_condition_code: typing.Optional[str],
         post_process_code: typing.Optional[str],
+        post_condition_code: typing.Optional[str],
     ) -> None:
         command = ScriptCommandYAML(
             label=label,
@@ -138,7 +144,9 @@ class ScenarioYAML(object):
             cancellable=cancellable,
             cancel_code=cancel_code,
             pre_process_code=pre_process_code,
+            pre_condition_code=pre_condition_code,
             post_process_code=post_process_code,
+            post_condition_code=post_condition_code,
         )
         self.commands.append(command)
 
@@ -206,7 +214,9 @@ class RequestValidationCommandYAML(object):
         self,
         label: typing.Optional[str],
         pre_process_code: typing.Optional[str],
+        pre_condition_code: typing.Optional[str],
         post_process_code: typing.Optional[str],
+        post_condition_code: typing.Optional[str],
         except_code: typing.Optional[str],
         body: typing.Optional[typing.Dict[typing.Any, typing.Any]],
         resources: typing.Optional[typing.Dict[typing.Any, typing.Any]],
@@ -219,19 +229,23 @@ class RequestValidationCommandYAML(object):
             self.label = label
 
         self.kwargs: typing.Dict[typing.Any, typing.Any] = {}
-        if pre_process_code is not None:
+        if pre_process_code is not None or pre_condition_code is not None:
             if 'aspect_options' not in self.kwargs:
                 self.kwargs['aspect_options'] = {}
-            self.kwargs['aspect_options']['pre'] = {
-                "process": pre_process_code
-            }
+            self.kwargs['aspect_options']['pre'] = {}
+            if pre_process_code is not None:
+                self.kwargs['aspect_options']['pre']['process'] = pre_process_code
+            if pre_condition_code is not None:
+                self.kwargs['aspect_options']['pre']['condition'] = pre_condition_code
 
-        if post_process_code is not None:
+        if post_process_code is not None or post_condition_code is not None:
             if 'aspect_options' not in self.kwargs:
                 self.kwargs['aspect_options'] = {}
-            self.kwargs['aspect_options']['post'] = {
-                "process": post_process_code
-            }
+            self.kwargs['aspect_options']['post'] = {}
+            if post_process_code is not None:
+                self.kwargs['aspect_options']['post']['process'] = post_process_code
+            if post_condition_code is not None:
+                self.kwargs['aspect_options']['post']['condition'] = post_condition_code
 
         if except_code is not None:
             self.kwargs['except_code'] = except_code
@@ -257,7 +271,9 @@ class ScriptCommandYAML(object):
         cancellable: bool,
         cancel_code: typing.Optional[str],
         pre_process_code: typing.Optional[str],
+        pre_condition_code: typing.Optional[str],
         post_process_code: typing.Optional[str],
+        post_condition_code: typing.Optional[str],
     ) -> None:
         self.command = 'script'
 
@@ -265,19 +281,23 @@ class ScriptCommandYAML(object):
             self.label = label
 
         self.kwargs: typing.Dict[str, typing.Any] = {}
-        if pre_process_code is not None:
+        if pre_process_code is not None or pre_condition_code is not None:
             if 'aspect_options' not in self.kwargs:
                 self.kwargs['aspect_options'] = {}
-            self.kwargs['aspect_options']['pre'] = {
-                "process": pre_process_code
-            }
+            self.kwargs['aspect_options']['pre'] = {}
+            if pre_process_code is not None:
+                self.kwargs['aspect_options']['pre']['process'] = pre_process_code
+            if pre_condition_code is not None:
+                self.kwargs['aspect_options']['pre']['condition'] = pre_condition_code
 
-        if post_process_code is not None:
+        if post_process_code is not None or post_condition_code is not None:
             if 'aspect_options' not in self.kwargs:
                 self.kwargs['aspect_options'] = {}
-            self.kwargs['aspect_options']['post'] = {
-                "process": post_process_code
-            }
+            self.kwargs['aspect_options']['post'] = {}
+            if post_process_code is not None:
+                self.kwargs['aspect_options']['post']['process'] = post_process_code
+            if post_condition_code is not None:
+                self.kwargs['aspect_options']['post']['condition'] = post_condition_code
 
         self.kwargs['code'] = code
         self.kwargs['cancellation'] = {}
@@ -339,7 +359,9 @@ def to_yaml(scenario_def: parser.ScenarioDefinition) -> ScenarioYAML:
     for command in scenario_def.commands:
         if isinstance(command, comp.RequestValidation):
             pre_process_code = command.get_code('pre_process')
+            pre_condition_code = command.get_code('pre_condition')
             post_process_code = command.get_code('post_process')
+            post_condition_code = command.get_code('post_condition')
             except_code = command.get_code('except_code')
             scenario_yaml.add_request_validation_command(
                 label=command.__setting__().label,
@@ -348,21 +370,27 @@ def to_yaml(scenario_def: parser.ScenarioDefinition) -> ScenarioYAML:
                 params=command.params(),
                 headers=command.headers(),
                 pre_process_code=pre_process_code,
+                pre_condition_code=pre_condition_code,
                 post_process_code=post_process_code,
+                post_condition_code=post_condition_code,
                 except_code=except_code,
             )
         elif isinstance(command, comp.Script):
             code = command.get_code('code')
             cancel_code = command.get_code('cancel_code')
             pre_process_code = command.get_code('pre_process')
+            pre_condition_code = command.get_code('pre_condition')
             post_process_code = command.get_code('post_process')
+            post_condition_code = command.get_code('post_condition')
             scenario_yaml.add_script_command(
                 label=command.__setting__().label,
                 code=code,
                 cancellable=command.__setting__().cancellable,
                 cancel_code=cancel_code,
                 pre_process_code=pre_process_code,
+                pre_condition_code=pre_condition_code,
                 post_process_code=post_process_code,
+                post_condition_code=post_condition_code,
             )
         elif isinstance(command, comp.BaseCommand) and hasattr(command, 'to_dict'):
             scenario_yaml.commands.append(command.to_dict())
