@@ -218,8 +218,16 @@ class RequestValidation(BaseCommand):
         """pre process code (optional)"""
         pass
 
+    async def pre_condition(self) -> None:
+        """pre condition code (optional)"""
+        pass
+
     async def post_process(self) -> None:
         """post process code (optional)"""
+        pass
+
+    async def post_condition(self) -> None:
+        """post condition code (optional)"""
         pass
 
     async def except_code(self) -> None:
@@ -255,8 +263,16 @@ class Script(BaseCommand):
         """pre process code (optional)"""
         pass
 
+    async def pre_condition(self) -> None:
+        """pre condition code (optional)"""
+        pass
+
     async def post_process(self) -> None:
         """post process code (optional)"""
+        pass
+
+    async def post_condition(self) -> None:
+        """post condition code (optional)"""
         pass
 
 
