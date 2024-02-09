@@ -18,8 +18,8 @@ Qmonus-SDKのPlugin開発の際、以下のようなエディタの持つ開発�
 
 ## インストール
 `pip install`を実行してください。venvの利用を推奨します。
-```
-pip install -U git+https://github.com/qmonus/plugin-builder.git@1.3.0
+```sh
+pip install -U git+https://github.com/qmonus/plugin-builder.git@${VERSION}
 ```
 
 ## 利用方法
@@ -37,11 +37,11 @@ pip install -U git+https://github.com/qmonus/plugin-builder.git@1.3.0
     - qmonus_sdk_pluginsはpythonモジュールです。
     - qmonus_sdk_plugins内には、`class`、`module`、`scenario`、`daemon`が生成されます。[ディレクトリ構造](#ディレクトリ構造)を参考にしてください。
 
-```
-format:
+```sh
+# format
 python -m qmonus_plugin_builder init {project_path}
 
-example:
+# example
 python -m qmonus_plugin_builder init .
 ```
 
@@ -49,11 +49,11 @@ python -m qmonus_plugin_builder init .
   - `class`または`module`を追加したり削除したりした場合は、`updateコマンド`を実行してください。
   - 更新により、Static Type Checkingなどに必要な情報が`libs`ディレクトリ配下に生成されます。
 
-```
-format:
+```sh
+# format
 python -m qmonus_plugin_builder update {project_path}
 
-example:
+# example
 python -m qmonus_plugin_builder update .
 ```
 
@@ -62,11 +62,11 @@ python -m qmonus_plugin_builder update .
   - 内部的には`updateコマンド`の処理を実施してからYAMLファイルの生成が行われます。
   - 下記の例では、`../axis`にYAMLファイルを出力しています。
 
-```
-format:
+```sh
+# format
 python -m qmonus_plugin_builder dump {project_path} {YAML出力先のpath}
 
-example:
+# example
 python -m qmonus_plugin_builder dump . ../axis
 ```
 
