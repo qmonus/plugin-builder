@@ -5,7 +5,7 @@ description = "Qmonus-PluginBuilder"
 authors = ["NTT Communications Corporation"]
 
 [tool.poetry.dependencies]
-python = ">=3.9"
+python = ">=3.10"
 PyYAML = ">=6.0.1"
 SQLAlchemy = ">=1.4.31"
 jsonschema = ">=4.4.0"

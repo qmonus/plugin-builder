@@ -82,7 +82,7 @@ def get_definitions(module_path: pathlib.Path) -> typing.List[ScenarioDefinition
         for index, command in enumerate(commands):
             if command.__class__.__name__ != f'Command{index}':
                 _err = f"Invalid command name '{command.__class__.__name__}' in '{module.__name__.split('.')[-1]}'. " \
-                       f"Corrent name is 'Command{index}'."
+                       f"Current name is 'Command{index}'."
                 raise exceptions.ScenarioError(_err)
 
         definition = ScenarioDefinition(

@@ -17,7 +17,10 @@ Qmonus-SDKのPlugin開発の際、以下のようなエディタの持つ開発�
 `class`、`module`、`scenario`、`daemon`をサポートしています。
 
 ## サポートバージョン
-サポートしているpythonのバージョンは`.github/workflows`内のyamlファイルに記載しています。
+- Python 3.10
+- Python 3.12
+
+※Qmonus-SDKのバージョンに合わせてください。
 
 ## インストール
 `pip install`を実行してください。venvの利用を推奨します。
