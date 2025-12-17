@@ -83,7 +83,7 @@ def get_definitions(module_path: pathlib.Path) -> typing.List[DaemonDefinition]:
                 _err = f"Invalid command name '{command.__class__.__name__}' in '{module.__name__.split('.')[-1]}'. " \
                        f"Corrent name is 'Command{index}'."
                 raise exceptions.DaemonError(_err)
-        
+
         definition = DaemonDefinition(
             name=setting.name,
             setting=setting,
