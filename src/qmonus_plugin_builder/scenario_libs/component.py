@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 import typing
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from enum import Enum
 from http import HTTPStatus
 
@@ -62,10 +62,10 @@ class Spec:
         class Normal:
             codes: typing.Union[typing.List[int], typing.Tuple[int]] = (HTTPStatus.OK.value,)
 
-        normal: typing.Optional[Spec.Response.Normal] = Normal()
+        normal: typing.Optional[Spec.Response.Normal] = field(default_factory=Normal)
 
     request: typing.Optional[Spec.Request] = None
-    response: typing.Optional[Spec.Response] = Response()
+    response: typing.Optional[Spec.Response] = field(default_factory=Response)
 
     def to_dict(self, empty_the_value_of_none: bool = True) -> dict:
         dict_of_self = dictionary.rename_now_key_to_new_key(asdict(self), now_key='dollar_sign_schema', new_key='$schema')
