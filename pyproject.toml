@@ -2,7 +2,7 @@
 name = "qmonus-plugin-builder"
 version = "1.5.0"
 description = "Qmonus-PluginBuilder"
-authors = ["NTT Communications Corporation"]
+authors = ["NTT DOCOMO BUSINESS, Inc."]
 
 [tool.poetry.dependencies]
 python = ">=3.10"
