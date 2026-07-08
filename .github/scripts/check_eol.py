@@ -5,6 +5,7 @@ import json
 import os
 import re
 import sys
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -51,8 +52,11 @@ PRODUCT_LABELS = {
 
 
 def fetch_json(url):
-    with urllib.request.urlopen(url, timeout=10) as res:
-        return json.load(res)
+    try:
+        with urllib.request.urlopen(url, timeout=10) as res:
+            return json.load(res)
+    except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError):
+        return []
 
 
 def parse_pyproject_python(path):
@@ -80,16 +84,43 @@ def substitute_vars(ref, args):
     return VAR_RE.sub(lambda m: args.get(m.group(1), m.group(0)), ref)
 
 
+# Docker Hubの公式イメージ("python:tag"相当)とみなすレジストリホスト。
+# これ以外のホスト(ghcr.io, mcr.microsoft.com, 社内レジストリ等)は
+# 末尾のイメージ名がpython/node等と同名でも非公式のため対象外にする。
+OFFICIAL_REGISTRY_HOSTS = {"docker.io", "index.docker.io"}
+
+
+def resolve_official_image_name(path_part):
+    # 公式イメージとして認められるパス構造: "name" / "library/name" /
+    # "docker.io/name" / "docker.io/library/name" のみ。
+    # "someuser/name" や "ghcr.io/foo/name" 等はDocker Hub公式ではないため除外する。
+    parts = path_part.split("/")
+    if len(parts) == 1:
+        return parts[0]
+    if len(parts) == 2 and parts[0] == "library":
+        return parts[1]
+    if len(parts) == 2 and parts[0] in OFFICIAL_REGISTRY_HOSTS:
+        return parts[1]
+    if len(parts) == 3 and parts[0] in OFFICIAL_REGISTRY_HOSTS and parts[1] == "library":
+        return parts[2]
+    return None
+
+
 def parse_image_ref(image_ref):
     ref = image_ref.split("@", 1)[0]  # digest指定 (name:tag@sha256:...) を除く
     if "$" in ref:
         return None  # ARGにデフォルト値がなく解決できない
-    basename = ref.rsplit("/", 1)[-1]  # レジストリ/パス部分を除いた末尾のイメージ名
-    if ":" not in basename:
-        return None  # タグ省略(=latest)はバージョン不明のため対象外
-    name, tag = basename.split(":", 1)
-    if not tag:
-        return None
+
+    # タグは末尾のパスセグメントに付与されるため、最後の":"で分離する。
+    # プライベートレジストリのポート指定(host:port/name)は tag 側に"/"が
+    # 残ることで誤って分離されないよう区別する。
+    path_part, sep, tag = ref.rpartition(":")
+    if not sep or not tag or "/" in tag:
+        return None  # タグ省略(=latest)、またはホスト:ポート表記
+
+    name = resolve_official_image_name(path_part)
+    if name is None:
+        return None  # Docker Hub公式イメージと確認できないため対象外
     return name.lower(), tag
 
 

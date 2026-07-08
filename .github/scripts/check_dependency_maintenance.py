@@ -98,9 +98,12 @@ def parse_requirements_deps(path, *, _seen=None):
     return list(dict.fromkeys(names))
 
 
+NPM_DEPENDENCY_FIELDS = ("dependencies", "devDependencies", "optionalDependencies", "peerDependencies")
+
+
 def parse_npm_deps(path):
     data = json.loads(path.read_text())
-    names = list(data.get("dependencies", {})) + list(data.get("devDependencies", {}))
+    names = [name for field in NPM_DEPENDENCY_FIELDS for name in data.get(field, {})]
     return list(dict.fromkeys(names))
 
 
