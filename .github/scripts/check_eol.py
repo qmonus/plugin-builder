@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """endoflife.date を使い、Python本体とDockerfileの公式ベースイメージのEOL状況を確認する。
 
-Dockerfileのベースイメージは LANGUAGE_PRODUCTS / OS_PRODUCTS に列挙した公式イメージ
-(python/node/golang/debian/ubuntu/alpine/almalinux/centos)のみが対象で、それ以外
-(例: 公式の bash イメージ等)は対象外。
+Dockerfileは build/** 等のディレクトリに限定せず、リポジトリ全体を再帰的に探索する
+(find_dockerfiles() 参照)。ベースイメージは LANGUAGE_PRODUCTS / OS_PRODUCTS に列挙した
+公式イメージ(python/node/golang/debian/ubuntu/alpine/almalinux/centos)のみが対象で、
+それ以外(例: 公式の bash イメージ等、タグ省略、digest指定、非公式レジストリ)は対象外。
 """
 import datetime
 import json
@@ -11,7 +12,6 @@ import os
 import re
 import sys
 import tomllib
-import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -177,10 +177,13 @@ def base_image_targets(name, tag):
 
 
 def parse_dockerfile_targets(path):
+    # 戻り値: (targets, unresolved) 。unresolved は、タグ省略/digest指定/非公式レジストリ/
+    # 未対応イメージ等でチェック対象にできなかった FROM 行の数(前段ステージへの参照は除く)。
     text = path.read_text(encoding="utf-8")
     args = resolve_arg_defaults(text)
 
     targets = []
+    unresolved = 0
     stage_aliases = set()
     for raw_ref, alias in FROM_RE.findall(text):
         image_ref = substitute_vars(raw_ref, args)
@@ -191,11 +194,15 @@ def parse_dockerfile_targets(path):
 
         parsed = parse_image_ref(image_ref)
         if not parsed:
+            unresolved += 1
             continue
         name, tag = parsed
-        targets.extend(base_image_targets(name, tag))
+        matched = base_image_targets(name, tag)
+        if not matched:
+            unresolved += 1
+        targets.extend(matched)
 
-    return targets
+    return targets, unresolved
 
 
 def find_cycle(entries, cycle):
@@ -223,6 +230,7 @@ def eol_status(eol_value):
 
 def collect_targets():
     targets = []
+    unresolved_sources = []
 
     pyproject_path = REPO_ROOT / "pyproject.toml"
     if pyproject_path.exists():
@@ -232,14 +240,17 @@ def collect_targets():
 
     for dockerfile in find_dockerfiles():
         rel = str(dockerfile.relative_to(REPO_ROOT))
-        for product, version, is_codename in parse_dockerfile_targets(dockerfile):
+        dockerfile_targets, unresolved = parse_dockerfile_targets(dockerfile)
+        for product, version, is_codename in dockerfile_targets:
             targets.append((rel, product, version, is_codename))
+        if unresolved:
+            unresolved_sources.append(rel)
 
-    return targets
+    return targets, unresolved_sources
 
 
 def main():
-    targets = collect_targets()
+    targets, unresolved_sources = collect_targets()
     product_cache = {}
 
     rows = []
@@ -284,6 +295,12 @@ def main():
         ]
         for source, label, cycle, eol_date_str, status in rows:
             lines.append(f"| {source} | {label} | {cycle} | {eol_date_str} | {status} |")
+    if unresolved_sources:
+        lines.append("")
+        lines.append(
+            "⚠️ 以下のDockerfileには、タグ省略/digest指定/非公式レジストリ/未対応イメージ等のため"
+            "チェック対象外になったFROM行があります: " + ", ".join(unresolved_sources)
+        )
     summary = "\n".join(lines)
 
     print(summary)

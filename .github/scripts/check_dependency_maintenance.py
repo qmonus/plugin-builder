@@ -24,7 +24,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEPS_DEV_API = "https://api.deps.dev/v3"
 MAINTAINED_CHECK = "Maintained"
 LOW_SCORE_THRESHOLD = 3
-MAX_WORKERS = 8
+# ロックファイル由来で依存数が数百〜千件規模になり得るため、デフォルトは低めにして
+# deps.dev のレート制限を避ける。必要に応じて環境変数で調整できる。
+MAX_WORKERS = int(os.environ.get("DEPS_DEV_MAX_WORKERS", "4"))
 STATUS_PRIORITY = {"🔴": 0, "🟡": 1, "⚪": 2, "🟢": 3}
 
 GO_REQUIRE_LINE = re.compile(r"^([^\s]+)\s+v[0-9][^\s]*(\s+//\s*indirect)?$")
@@ -45,11 +47,16 @@ def fetch_json(url):
     try:
         with urllib.request.urlopen(req, timeout=15) as res:
             return json.load(res)
+    except urllib.error.HTTPError as e:
+        # 404/400 は「deps.devに未登録のパッケージ/バージョン」という想定内の結果であり、
+        # ロックファイルで間接依存まで対象にすると頻発するため warning としては出さない。
+        # それ以外のHTTPエラー(5xx等)は異常なので warning を出す。
+        if e.code not in (400, 404):
+            print(f"::warning::{url} の取得に失敗しました: HTTP {e.code}")
+        return None
     except (OSError, json.JSONDecodeError) as e:
-        # OSError は urllib.error.URLError/HTTPError の親クラスであり、生の
-        # TimeoutError/ConnectionError 等も含めて捕捉できる。取得失敗を
-        # ログに残してから None を返し、呼び出し側での既存のフォールバック
-        # (未登録/404扱い)に委ねる。
+        # OSError は urllib.error.URLError の親クラスであり、生の
+        # TimeoutError/ConnectionError 等も含めて捕捉できる。
         print(f"::warning::{url} の取得に失敗しました: {e}")
         return None
 
@@ -62,7 +69,12 @@ def normalize_pypi_name(name):
 def parse_pep621_requirement_name(requirement):
     # PEP 508 の依存指定文字列("fastmcp>=3.1.1,<4"等)から先頭のパッケージ名だけを取り出す。
     # requirements*.txt の行と同じ形なので REQUIREMENTS_NAME を再利用する。
-    m = REQUIREMENTS_NAME.match(requirement.strip())
+    # "name @ url"(PEP 508 direct reference。VCS/URL/ローカルパス指定)は通常のPyPI名
+    # 解決ができないため、requirements*.txt側のURL除外(「://」)と同様に対象外にする。
+    requirement = requirement.strip()
+    if "://" in requirement or " @ " in requirement:
+        return None
+    m = REQUIREMENTS_NAME.match(requirement)
     return m.group(1) if m else None
 
 

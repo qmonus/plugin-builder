@@ -5,6 +5,12 @@ on:
     - cron: "0 0 1 * *" # 毎月1日 00:00 UTC
   workflow_dispatch: {}
 
+# schedule と workflow_dispatch が重なった場合に、endoflife.date/deps.dev への
+# 問い合わせが並行して走らないようにする（同時実行はキューさせる、キャンセルはしない）。
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   eol-check:
     runs-on: ubuntu-latest
@@ -21,7 +27,7 @@ jobs:
           python-version: '3.12'
 
       - name: Check EOL status via endoflife.date
-        run: python3 .github/scripts/check_eol.py
+        run: python .github/scripts/check_eol.py
 
   dependency-maintenance-check:
     runs-on: ubuntu-latest
@@ -40,4 +46,4 @@ jobs:
           python-version: '3.12'
 
       - name: Check dependency maintenance status via deps.dev
-        run: python3 .github/scripts/check_dependency_maintenance.py
+        run: python .github/scripts/check_dependency_maintenance.py
