@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """deps.dev (OpenSSF Scorecard) を使い、依存パッケージのメンテナンス状況を確認する。
 
-Python(pyproject.toml (Poetry) / requirements*.txt) / npm(package.json) / Go(go.mod) を対象に、
+Python(pyproject.toml (Poetry の [tool.poetry.dependencies] または PEP 621 の
+[project.dependencies]/uv 等) / requirements*.txt) / npm(package.json) / Go(go.mod) を対象に、
 各パッケージのソースリポジトリに対する OpenSSF Scorecard の Maintained チェック結果を取得する。
-ロックファイル(poetry.lock / package-lock.json / go.sum)が同じディレクトリに存在する場合は、
-そちらを優先して読み、直接依存だけでなく間接依存も対象にする。ロックファイルが無い場合は
+ロックファイル(poetry.lock / uv.lock / package-lock.json / go.sum)が同じディレクトリに存在する
+場合は、そちらを優先して読み、直接依存だけでなく間接依存も対象にする。ロックファイルが無い場合は
 マニフェストの直接依存のみを対象にする(従来どおり)。
 """
 import fnmatch
@@ -51,16 +52,40 @@ def normalize_pypi_name(name):
     return re.sub(r"[-_.]+", "-", name).lower()
 
 
+def parse_pep621_requirement_name(requirement):
+    # PEP 508 の依存指定文字列("fastmcp>=3.1.1,<4"等)から先頭のパッケージ名だけを取り出す。
+    # requirements*.txt の行と同じ形なので REQUIREMENTS_NAME を再利用する。
+    m = REQUIREMENTS_NAME.match(requirement.strip())
+    return m.group(1) if m else None
+
+
 def parse_python_deps(path):
+    # Poetry([tool.poetry.dependencies])と PEP 621([project.dependencies]、uv 等が使う形式)の
+    # 両方に対応する。同じ pyproject.toml で両方は使われない前提で、存在する方を採用する。
     with path.open("rb") as f:
         data = tomllib.load(f)
-    deps = data.get("tool", {}).get("poetry", {}).get("dependencies", {})
-    names = [name for name in deps if name.lower() != "python"]
-    return [normalize_pypi_name(n) for n in names]
+
+    poetry_deps = data.get("tool", {}).get("poetry", {}).get("dependencies")
+    if poetry_deps:
+        names = [name for name in poetry_deps if name.lower() != "python"]
+        return [normalize_pypi_name(n) for n in names]
+
+    project = data.get("project", {})
+    requirements = list(project.get("dependencies", []))
+    for extra_requirements in project.get("optional-dependencies", {}).values():
+        requirements.extend(extra_requirements)
+    # PEP 735 の依存グループ([dependency-groups])。{"include-group": "..."} のような
+    # 他グループ参照は文字列ではないため無視する。
+    for group_entries in data.get("dependency-groups", {}).values():
+        requirements.extend(entry for entry in group_entries if isinstance(entry, str))
+
+    names = [parse_pep621_requirement_name(req) for req in requirements]
+    return list(dict.fromkeys(normalize_pypi_name(n) for n in names if n))
 
 
-def parse_poetry_lock_deps(path):
-    # poetry.lock は解決済みの全パッケージ([[package]])を列挙するため、直接/間接を問わず対象になる。
+def parse_pypi_lock_deps(path):
+    # poetry.lock / uv.lock はいずれも解決済みの全パッケージを [[package]] (name/version)で
+    # 列挙する同じ構造のため、共通のパーサーで扱える。直接/間接を問わず対象になる。
     with path.open("rb") as f:
         data = tomllib.load(f)
     names = [pkg["name"] for pkg in data.get("package", []) if pkg.get("name")]
@@ -223,10 +248,15 @@ def collect_targets():
 
     pyproject = REPO_ROOT / "pyproject.toml"
     if pyproject.exists():
-        poetry_lock = pyproject.parent / "poetry.lock"
-        if poetry_lock.exists():
-            rel = str(poetry_lock.relative_to(REPO_ROOT))
-            targets.extend((rel, "pypi", name) for name in parse_poetry_lock_deps(poetry_lock))
+        # poetry.lock(Poetry) / uv.lock(uv) はいずれも [[package]] で解決済み全パッケージを
+        # 列挙する同じ構造。どちらか存在する方を優先する。
+        lock_path = next(
+            (p for p in (pyproject.parent / "poetry.lock", pyproject.parent / "uv.lock") if p.exists()),
+            None,
+        )
+        if lock_path:
+            rel = str(lock_path.relative_to(REPO_ROOT))
+            targets.extend((rel, "pypi", name) for name in parse_pypi_lock_deps(lock_path))
         else:
             rel = str(pyproject.relative_to(REPO_ROOT))
             targets.extend((rel, "pypi", name) for name in parse_python_deps(pyproject))
