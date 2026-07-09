@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""deps.dev (OpenSSF Scorecard) を使い、直接依存パッケージのメンテナンス状況を確認する。
+"""deps.dev (OpenSSF Scorecard) を使い、依存パッケージのメンテナンス状況を確認する。
 
-Python(pyproject.toml (Poetry) / requirements*.txt) / npm(package.json) / Go(go.mod) の直接依存を対象に、
+Python(pyproject.toml (Poetry) / requirements*.txt) / npm(package.json) / Go(go.mod) を対象に、
 各パッケージのソースリポジトリに対する OpenSSF Scorecard の Maintained チェック結果を取得する。
+ロックファイル(poetry.lock / package-lock.json / go.sum)が同じディレクトリに存在する場合は、
+そちらを優先して読み、直接依存だけでなく間接依存も対象にする。ロックファイルが無い場合は
+マニフェストの直接依存のみを対象にする(従来どおり)。
 """
 import fnmatch
 import json
@@ -53,6 +56,14 @@ def parse_python_deps(path):
         data = tomllib.load(f)
     deps = data.get("tool", {}).get("poetry", {}).get("dependencies", {})
     names = [name for name in deps if name.lower() != "python"]
+    return [normalize_pypi_name(n) for n in names]
+
+
+def parse_poetry_lock_deps(path):
+    # poetry.lock は解決済みの全パッケージ([[package]])を列挙するため、直接/間接を問わず対象になる。
+    with path.open("rb") as f:
+        data = tomllib.load(f)
+    names = [pkg["name"] for pkg in data.get("package", []) if pkg.get("name")]
     return [normalize_pypi_name(n) for n in names]
 
 
@@ -107,6 +118,35 @@ def parse_npm_deps(path):
     return list(dict.fromkeys(names))
 
 
+def parse_npm_lock_deps(path):
+    # package-lock.json は解決済みの全パッケージ(直接/間接問わず)を列挙する。
+    data = json.loads(path.read_text())
+    names = set()
+
+    packages = data.get("packages")
+    if packages is not None:
+        # lockfileVersion 2/3: キーはインストール先パス("", "node_modules/foo",
+        # "node_modules/foo/node_modules/@scope/bar" 等)。末尾の"node_modules/"以降が
+        # パッケージ名で、スコープ付き名("@scope/name")もそのまま保持される。
+        for key in packages:
+            if not key:
+                continue  # "" はプロジェクト自身
+            idx = key.rfind("node_modules/")
+            name = key[idx + len("node_modules/"):] if idx != -1 else key
+            if name:
+                names.add(name)
+    else:
+        # lockfileVersion 1: "dependencies" が {name: {dependencies: {...}}} の形でネストする。
+        def walk(deps):
+            for name, info in (deps or {}).items():
+                names.add(name)
+                walk((info or {}).get("dependencies"))
+
+        walk(data.get("dependencies"))
+
+    return sorted(names)
+
+
 def parse_go_deps(path):
     text = path.read_text()
     deps = []
@@ -133,12 +173,35 @@ def parse_go_deps(path):
     return deps
 
 
+GO_SUM_MODULE_RE = re.compile(r"^(\S+)\s+v\S+(?:/go\.mod)?\s+h1:")
+
+
+def parse_go_sum_deps(path):
+    # go.sum はビルドに使う全モジュール(直接/間接問わず)を列挙する。
+    # 各モジュールは "module version h1:..." と "module version/go.mod h1:..." の2行で
+    # 現れるため、モジュールパス単位で重複排除する。
+    names = set()
+    for line in path.read_text().splitlines():
+        m = GO_SUM_MODULE_RE.match(line)
+        if m:
+            names.add(m.group(1))
+    return sorted(names)
+
+
 # (ファイル名パターン, deps.dev system, パーサー)
 MANIFEST_MATCHERS = [
     ("requirements*.txt", "pypi", parse_requirements_deps),
     ("package.json", "npm", parse_npm_deps),
     ("go.mod", "go", parse_go_deps),
 ]
+
+# マニフェストと同じディレクトリにロックファイルがあれば、そちらを優先する
+# (ファイル名 -> (ロックファイル名, パーサー))。ロックファイルは直接/間接を問わず
+# 解決済みの全パッケージを列挙するため、より網羅的な検出になる。
+LOCK_OVERRIDES = {
+    "package.json": ("package-lock.json", parse_npm_lock_deps),
+    "go.mod": ("go.sum", parse_go_sum_deps),
+}
 
 
 def find_manifests():
@@ -160,12 +223,23 @@ def collect_targets():
 
     pyproject = REPO_ROOT / "pyproject.toml"
     if pyproject.exists():
-        rel = str(pyproject.relative_to(REPO_ROOT))
-        targets.extend((rel, "pypi", name) for name in parse_python_deps(pyproject))
+        poetry_lock = pyproject.parent / "poetry.lock"
+        if poetry_lock.exists():
+            rel = str(poetry_lock.relative_to(REPO_ROOT))
+            targets.extend((rel, "pypi", name) for name in parse_poetry_lock_deps(poetry_lock))
+        else:
+            rel = str(pyproject.relative_to(REPO_ROOT))
+            targets.extend((rel, "pypi", name) for name in parse_python_deps(pyproject))
 
     for path, system, parser in find_manifests():
-        rel = str(path.relative_to(REPO_ROOT))
-        targets.extend((rel, system, name) for name in parser(path))
+        lock_override = LOCK_OVERRIDES.get(path.name)
+        lock_path = path.parent / lock_override[0] if lock_override else None
+        if lock_path and lock_path.exists():
+            rel = str(lock_path.relative_to(REPO_ROOT))
+            targets.extend((rel, system, name) for name in lock_override[1](lock_path))
+        else:
+            rel = str(path.relative_to(REPO_ROOT))
+            targets.extend((rel, system, name) for name in parser(path))
 
     return targets
 
