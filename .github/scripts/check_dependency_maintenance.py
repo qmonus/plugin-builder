@@ -29,7 +29,9 @@ STATUS_PRIORITY = {"🔴": 0, "🟡": 1, "⚪": 2, "🟢": 3}
 
 GO_REQUIRE_LINE = re.compile(r"^([^\s]+)\s+v[0-9][^\s]*(\s+//\s*indirect)?$")
 REQUIREMENTS_NAME = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)")
-EXCLUDED_DIR_NAMES = {"node_modules", ".venv", "venv", "site-packages"}
+# cue.mod は CUE言語のモジュールキャッシュ(node_modules相当)。配下の go.mod 等は
+# ベンダーされた第三者モジュール自身のものでこのプロジェクトの直接依存ではないため除外する。
+EXCLUDED_DIR_NAMES = {"node_modules", ".venv", "venv", "site-packages", "cue.mod"}
 # os.walk で再帰しないディレクトリ。EXCLUDED_DIR_NAMES に加え、依存探索に無関係な .git も剪定する。
 PRUNED_DIR_NAMES = EXCLUDED_DIR_NAMES | {".git"}
 
@@ -43,7 +45,12 @@ def fetch_json(url):
     try:
         with urllib.request.urlopen(req, timeout=15) as res:
             return json.load(res)
-    except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError):
+    except (OSError, json.JSONDecodeError) as e:
+        # OSError は urllib.error.URLError/HTTPError の親クラスであり、生の
+        # TimeoutError/ConnectionError 等も含めて捕捉できる。取得失敗を
+        # ログに残してから None を返し、呼び出し側での既存のフォールバック
+        # (未登録/404扱い)に委ねる。
+        print(f"::warning::{url} の取得に失敗しました: {e}")
         return None
 
 
@@ -61,14 +68,17 @@ def parse_pep621_requirement_name(requirement):
 
 def parse_python_deps(path):
     # Poetry([tool.poetry.dependencies])と PEP 621([project.dependencies]、uv 等が使う形式)の
-    # 両方に対応する。同じ pyproject.toml で両方は使われない前提で、存在する方を採用する。
+    # 両方を読み、和集合を返す。Poetry 2.x では [tool.poetry] と [project] が同じ
+    # pyproject.toml に共存できるため、片方が存在すればもう片方を無視するのではなく
+    # 両方解析して取りこぼしを防ぐ。
     with path.open("rb") as f:
         data = tomllib.load(f)
 
+    names = []
+
     poetry_deps = data.get("tool", {}).get("poetry", {}).get("dependencies")
-    if poetry_deps:
-        names = [name for name in poetry_deps if name.lower() != "python"]
-        return [normalize_pypi_name(n) for n in names]
+    if poetry_deps is not None:
+        names.extend(name for name in poetry_deps if name.lower() != "python")
 
     project = data.get("project", {})
     requirements = list(project.get("dependencies", []))
@@ -78,9 +88,9 @@ def parse_python_deps(path):
     # 他グループ参照は文字列ではないため無視する。
     for group_entries in data.get("dependency-groups", {}).values():
         requirements.extend(entry for entry in group_entries if isinstance(entry, str))
+    names.extend(n for n in (parse_pep621_requirement_name(req) for req in requirements) if n)
 
-    names = [parse_pep621_requirement_name(req) for req in requirements]
-    return list(dict.fromkeys(normalize_pypi_name(n) for n in names if n))
+    return list(dict.fromkeys(normalize_pypi_name(n) for n in names))
 
 
 def parse_pypi_lock_deps(path):
@@ -138,27 +148,30 @@ NPM_DEPENDENCY_FIELDS = ("dependencies", "devDependencies", "optionalDependencie
 
 
 def parse_npm_deps(path):
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     names = [name for field in NPM_DEPENDENCY_FIELDS for name in data.get(field, {})]
     return list(dict.fromkeys(names))
 
 
 def parse_npm_lock_deps(path):
     # package-lock.json は解決済みの全パッケージ(直接/間接問わず)を列挙する。
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     names = set()
 
     packages = data.get("packages")
     if packages is not None:
         # lockfileVersion 2/3: キーはインストール先パス("", "node_modules/foo",
-        # "node_modules/foo/node_modules/@scope/bar" 等)。末尾の"node_modules/"以降が
-        # パッケージ名で、スコープ付き名("@scope/name")もそのまま保持される。
+        # "node_modules/foo/node_modules/@scope/bar" 等)だが、npm workspaces では
+        # "packages/foo" のような node_modules を含まないワークスペースパスも
+        # 混在する。パッケージとして扱えるのは "node_modules/" を含むキーのみで、
+        # 末尾の"node_modules/"以降がパッケージ名になる(スコープ付き名も保持される)。
+        # ".bin"はシンボリックリンク置き場でパッケージ本体ではないため除外する。
         for key in packages:
-            if not key:
-                continue  # "" はプロジェクト自身
             idx = key.rfind("node_modules/")
-            name = key[idx + len("node_modules/"):] if idx != -1 else key
-            if name:
+            if idx == -1:
+                continue  # "" (プロジェクト自身) やワークスペースパスは対象外
+            name = key[idx + len("node_modules/"):]
+            if name and name != ".bin" and not name.startswith(".bin/"):
                 names.add(name)
     else:
         # lockfileVersion 1: "dependencies" が {name: {dependencies: {...}}} の形でネストする。
@@ -173,7 +186,7 @@ def parse_npm_lock_deps(path):
 
 
 def parse_go_deps(path):
-    text = path.read_text()
+    text = path.read_text(encoding="utf-8")
     deps = []
     in_block = False
     for line in text.splitlines():
@@ -206,7 +219,7 @@ def parse_go_sum_deps(path):
     # 各モジュールは "module version h1:..." と "module version/go.mod h1:..." の2行で
     # 現れるため、モジュールパス単位で重複排除する。
     names = set()
-    for line in path.read_text().splitlines():
+    for line in path.read_text(encoding="utf-8").splitlines():
         m = GO_SUM_MODULE_RE.match(line)
         if m:
             names.add(m.group(1))
@@ -353,10 +366,21 @@ def evaluate(target):
     return source, system, name, project_id, score, f"{icon} {reason}"
 
 
+def write_summary(summary):
+    print(summary)
+    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary_path:
+        with open(summary_path, "a", encoding="utf-8") as f:
+            f.write(summary + "\n")
+
+
 def main():
     targets = dedupe_targets(collect_targets())
     if not targets:
-        print("対象の依存パッケージが見つかりませんでした。")
+        write_summary(
+            "## Dependency Maintenance Check (deps.dev / OpenSSF Scorecard)\n\n"
+            "対象の依存パッケージが見つかりませんでした。"
+        )
         return 0
 
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
@@ -375,12 +399,7 @@ def main():
         lines.append(f"| {source} | {system} | {name} | {project_id} | {score} | {status} |")
     summary = "\n".join(lines)
 
-    print(summary)
-
-    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
-    if summary_path:
-        with open(summary_path, "a") as f:
-            f.write(summary + "\n")
+    write_summary(summary)
 
     if has_critical:
         print("::warning::メンテナンスが停止している可能性のある依存パッケージが検出されました。Job Summaryを確認してください。")

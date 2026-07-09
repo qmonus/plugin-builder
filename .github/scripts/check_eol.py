@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
-"""endoflife.date を使い、Python本体とDockerfileの公式ベースイメージのEOL状況を確認する。"""
+"""endoflife.date を使い、Python本体とDockerfileの公式ベースイメージのEOL状況を確認する。
+
+Dockerfileのベースイメージは LANGUAGE_PRODUCTS / OS_PRODUCTS に列挙した公式イメージ
+(python/node/golang/debian/ubuntu/alpine/almalinux/centos)のみが対象で、それ以外
+(例: 公式の bash イメージ等)は対象外。
+"""
 import datetime
 import json
 import os
 import re
 import sys
+import tomllib
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -55,13 +61,33 @@ def fetch_json(url):
     try:
         with urllib.request.urlopen(url, timeout=10) as res:
             return json.load(res)
-    except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError):
+    except (OSError, json.JSONDecodeError) as e:
+        # OSError は urllib.error.URLError/HTTPError の親クラスであり、生の
+        # TimeoutError/ConnectionError 等も含めて捕捉できる。取得失敗は
+        # 「情報なし」と区別できるよう warning を出してから空リストで継続する。
+        print(f"::warning::{url} の取得に失敗しました: {e}")
         return []
 
 
+PYTHON_VERSION_IN_CONSTRAINT_RE = re.compile(r"([0-9]+\.[0-9]+)")
+
+
 def parse_pyproject_python(path):
-    text = path.read_text()
-    m = re.search(r'^python\s*=\s*"[~^]?([0-9]+\.[0-9]+)', text, re.MULTILINE)
+    # Poetry の [tool.poetry.dependencies].python と PEP 621 の
+    # [project].requires-python の両方に対応する。"^3.12" / "~3.12" / ">=3.10,<4.0"
+    # のように演算子や複数制約が付いていても、文字列中最初の X.Y を対象にする。
+    with path.open("rb") as f:
+        data = tomllib.load(f)
+
+    constraint = data.get("tool", {}).get("poetry", {}).get("dependencies", {}).get("python")
+    if isinstance(constraint, dict):
+        constraint = constraint.get("version")
+    if constraint is None:
+        constraint = data.get("project", {}).get("requires-python")
+    if not isinstance(constraint, str):
+        return None
+
+    m = PYTHON_VERSION_IN_CONSTRAINT_RE.search(constraint)
     return m.group(1) if m else None
 
 
@@ -151,7 +177,7 @@ def base_image_targets(name, tag):
 
 
 def parse_dockerfile_targets(path):
-    text = path.read_text()
+    text = path.read_text(encoding="utf-8")
     args = resolve_arg_defaults(text)
 
     targets = []
@@ -248,21 +274,23 @@ def main():
             icon = "🟢"
         rows.append((source, label, cycle, eol_date_str, f"{icon} {status}"))
 
-    lines = [
-        "## EOL Check (endoflife.date)",
-        "",
-        "| 検出元 | 対象 | サイクル | EOL日 | 状態 |",
-        "|---|---|---|---|---|",
-    ]
-    for source, label, cycle, eol_date_str, status in rows:
-        lines.append(f"| {source} | {label} | {cycle} | {eol_date_str} | {status} |")
+    lines = ["## EOL Check (endoflife.date)", ""]
+    if not rows:
+        lines.append("対象のPythonバージョン/Dockerfileベースイメージが見つかりませんでした。")
+    else:
+        lines += [
+            "| 検出元 | 対象 | サイクル | EOL日 | 状態 |",
+            "|---|---|---|---|---|",
+        ]
+        for source, label, cycle, eol_date_str, status in rows:
+            lines.append(f"| {source} | {label} | {cycle} | {eol_date_str} | {status} |")
     summary = "\n".join(lines)
 
     print(summary)
 
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary_path:
-        with open(summary_path, "a") as f:
+        with open(summary_path, "a", encoding="utf-8") as f:
             f.write(summary + "\n")
 
     if has_eol:
