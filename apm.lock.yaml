@@ -1,0 +1,34 @@
+lockfile_version: '1'
+generated_at: '2026-07-08T06:42:58.412675+00:00'
+apm_version: 0.23.0
+dependencies:
+- repo_url: qmonus/qmonus-ai-guardrails
+  name: qmonus-ai-guardrails
+  host: github.com
+  resolved_commit: 134026e931897592638af344fc6e7ffd9a1fe1a4
+  resolved_ref: v1.1.0
+  version: 1.1.0
+  package_type: apm_package
+  deployed_files:
+  - .claude/rules/apm-package-management.md
+  - .claude/rules/environment-isolation.md
+  - .claude/rules/extension-evaluation.md
+  - .claude/rules/secrets-management.md
+  - .claude/rules/system-safety.md
+  - .github/instructions/apm-package-management.instructions.md
+  - .github/instructions/environment-isolation.instructions.md
+  - .github/instructions/extension-evaluation.instructions.md
+  - .github/instructions/secrets-management.instructions.md
+  - .github/instructions/system-safety.instructions.md
+  deployed_file_hashes:
+    .claude/rules/apm-package-management.md: sha256:1597f4963aed16787990f17f11faf72337eb294b4ab61042583deead2d712f97
+    .claude/rules/environment-isolation.md: sha256:72aaf2dc49f1bddae8305a29cf945ca5d03a1ea0bf1569510b01d457ffb28614
+    .claude/rules/extension-evaluation.md: sha256:d82ea7a8a646fcc96efbec878033bce4840c6f32eb5af338ce27acb627781046
+    .claude/rules/secrets-management.md: sha256:6337ef5d650fc534142791272f5a24735090e88962cf5177d4d8c0869144800d
+    .claude/rules/system-safety.md: sha256:af2776f1d6da7c4ac6b7f5fc269bcfa8ec97aae15da07c1ced16ea7f8349f1da
+    .github/instructions/apm-package-management.instructions.md: sha256:83a83f151e04702d6ebd9bd6cbcb6513f6087ca9a3486ebb10a65508a5c79d5a
+    .github/instructions/environment-isolation.instructions.md: sha256:da14d883d583daa0336f0cb731a20a5c617c17a575bcce0d0c54ed943cdb1bb2
+    .github/instructions/extension-evaluation.instructions.md: sha256:d05c458eccd1eac0eb70e3fc211346dc37ca737cb7dc6696adbbe4b2cefb2ad5
+    .github/instructions/secrets-management.instructions.md: sha256:a3dbc254e71ad5d80e558af315d6cb9dc6e53872c8c8751967ab95738787b7fb
+    .github/instructions/system-safety.instructions.md: sha256:04a9c218c6be19b9d8f9e7009957e890b410307896f5dbdf136ed59c09e19342
+  content_hash: sha256:0e3b5ffc72379a8e66f574ad17486f8b6538559a41260dfc6c0bcd80b0b44fc6

@@ -1,0 +1,13 @@
+name: plugin-builder
+version: 1.0.0
+description: APM project for plugin-builder
+author: massan1001
+targets:
+- claude
+- copilot
+dependencies:
+  apm:
+  - qmonus/qmonus-ai-guardrails#v1.1.0
+  mcp: []
+includes: auto
+scripts: {}
