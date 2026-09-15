@@ -258,6 +258,7 @@ class Identifier(Field):
         persistence: bool = True,
         immutable: bool = True,
         default: typing.Optional[str] = None,
+        server_default: typing.Optional[str] = None,
         metadata: typing.Optional[typing.Dict[typing.Any, typing.Any]] = None,
         dbtype: typing.Optional[str] = None,
         length: typing.Optional[int] = None,
@@ -267,6 +268,7 @@ class Identifier(Field):
         self.persistence = persistence
         self.immutable = immutable
         self.default = default
+        self.server_default = server_default
 
         # self.nullable = nullable
 
@@ -303,6 +305,7 @@ class LocalField(Field):
         immutable: bool = False,
         unique: bool = False,
         default: typing.Optional[str] = None,
+        server_default: typing.Optional[str] = None,
         enum: typing.Optional[typing.List[str]] = None,
         format: typing.Optional[typing.Union[typing.Dict[typing.Any, typing.Any], str]] = None,
         metadata: typing.Optional[typing.Dict[typing.Any, typing.Any]] = None,
@@ -318,6 +321,7 @@ class LocalField(Field):
         self.immutable = immutable
         self.unique = unique
         self.default = default
+        self.server_default = server_default
         self.enum = enum
         self.format = format
         self.metadata = metadata

@@ -89,6 +89,7 @@ class ClassYAML(object):
         field_persistence: bool,
         field_immutable: bool,
         field_default: typing.Optional[str],
+        field_server_default: typing.Optional[str],
         field_metadata: typing.Optional[typing.Dict[typing.Any, typing.Any]],
         field_dbtype: typing.Optional[str],
         field_length: typing.Optional[int],
@@ -99,6 +100,7 @@ class ClassYAML(object):
             field_persistence=field_persistence,
             field_immutable=field_immutable,
             field_default=field_default,
+            field_server_default=field_server_default,
             field_metadata=field_metadata,
             field_dbtype=field_dbtype,
             field_length=field_length,
@@ -113,6 +115,7 @@ class ClassYAML(object):
         field_immutable: bool,
         field_unique: bool,
         field_default: typing.Optional[str],
+        field_server_default: typing.Optional[str],
         field_enum: typing.Optional[typing.List[str]],
         field_format: typing.Optional[str],
         field_metadata: typing.Optional[typing.Dict[typing.Any, typing.Any]],
@@ -129,6 +132,7 @@ class ClassYAML(object):
             field_immutable=field_immutable,
             field_unique=field_unique,
             field_default=field_default,
+            field_server_default=field_server_default,
             field_enum=field_enum,
             field_format=field_format,
             field_metadata=field_metadata,
@@ -213,7 +217,8 @@ class IdentifierYAML(object):
         field_persistence: bool,
         field_immutable: bool,
         field_default: typing.Optional[str],
-        field_metadata: typing.Optional[typing.Dict[typing.Any, typing.Any]], 
+        field_server_default: typing.Optional[str],
+        field_metadata: typing.Optional[typing.Dict[typing.Any, typing.Any]],
         field_dbtype: typing.Optional[str],
         field_length: typing.Optional[int],
     ) -> None:
@@ -224,6 +229,9 @@ class IdentifierYAML(object):
 
         if field_default is not None:
             self.field_default = field_default
+
+        if field_server_default is not None:
+            self.field_server_default = field_server_default
 
         if field_metadata is not None:
             self.field_metadata = field_metadata
@@ -245,6 +253,7 @@ class LocalFieldYAML(object):
         field_immutable: bool,
         field_unique: bool,
         field_default: typing.Optional[str],
+        field_server_default: typing.Optional[str],
         field_enum: typing.Optional[typing.List[str]],
         field_format: typing.Optional[str],
         field_metadata: typing.Optional[typing.Dict[typing.Any, typing.Any]],
@@ -262,6 +271,9 @@ class LocalFieldYAML(object):
 
         if field_default is not None:
             self.field_default = field_default
+
+        if field_server_default is not None:
+            self.field_server_default = field_server_default
 
         if field_enum is not None:
             self.field_enum = field_enum
@@ -369,6 +381,7 @@ def to_yaml(cls_def: parser.ClassDefinition) -> ClassYAML:
             field_persistence=cls_def.setting.identifier.persistence,
             field_immutable=cls_def.setting.identifier.immutable,
             field_default=cls_def.setting.identifier.default,
+            field_server_default=cls_def.setting.identifier.server_default,
             field_metadata=cls_def.setting.identifier.metadata,
             field_dbtype=cls_def.setting.identifier.dbtype,
             field_length=cls_def.setting.identifier.length,
@@ -409,6 +422,7 @@ def to_yaml(cls_def: parser.ClassDefinition) -> ClassYAML:
             field_immutable=local_field.immutable,
             field_unique=local_field.unique,
             field_default=local_field.default,
+            field_server_default=local_field.server_default,
             field_enum=local_field.enum,
             field_format=field_format,
             field_metadata=local_field.metadata,
