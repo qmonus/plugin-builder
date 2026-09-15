@@ -261,6 +261,7 @@ class Identifier(Field):
         metadata: typing.Optional[typing.Dict[typing.Any, typing.Any]] = None,
         dbtype: typing.Optional[str] = None,
         length: typing.Optional[int] = None,
+        server_default: typing.Optional[str] = None,
     ) -> None:
         self.name = name
         self.type = type
@@ -273,6 +274,7 @@ class Identifier(Field):
         self.metadata = metadata
         self.dbtype = dbtype
         self.length = length
+        self.server_default = server_default
 
 
 class FSM(object):
@@ -310,6 +312,7 @@ class LocalField(Field):
         fsm: typing.Optional[typing.Dict[str, FSM]] = None,
         dbtype: typing.Optional[str] = None,
         length: typing.Optional[int] = None,
+        server_default: typing.Optional[str] = None,
     ) -> None:
         self.name = name
         self.type = type
@@ -325,6 +328,7 @@ class LocalField(Field):
         self.fsm = fsm
         self.dbtype = dbtype
         self.length = length
+        self.server_default = server_default
 
 
 class RefField(Field):
