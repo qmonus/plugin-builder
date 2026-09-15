@@ -258,23 +258,23 @@ class Identifier(Field):
         persistence: bool = True,
         immutable: bool = True,
         default: typing.Optional[str] = None,
-        server_default: typing.Optional[str] = None,
         metadata: typing.Optional[typing.Dict[typing.Any, typing.Any]] = None,
         dbtype: typing.Optional[str] = None,
         length: typing.Optional[int] = None,
+        server_default: typing.Optional[str] = None,
     ) -> None:
         self.name = name
         self.type = type
         self.persistence = persistence
         self.immutable = immutable
         self.default = default
-        self.server_default = server_default
 
         # self.nullable = nullable
 
         self.metadata = metadata
         self.dbtype = dbtype
         self.length = length
+        self.server_default = server_default
 
 
 class FSM(object):
@@ -305,7 +305,6 @@ class LocalField(Field):
         immutable: bool = False,
         unique: bool = False,
         default: typing.Optional[str] = None,
-        server_default: typing.Optional[str] = None,
         enum: typing.Optional[typing.List[str]] = None,
         format: typing.Optional[typing.Union[typing.Dict[typing.Any, typing.Any], str]] = None,
         metadata: typing.Optional[typing.Dict[typing.Any, typing.Any]] = None,
@@ -313,6 +312,7 @@ class LocalField(Field):
         fsm: typing.Optional[typing.Dict[str, FSM]] = None,
         dbtype: typing.Optional[str] = None,
         length: typing.Optional[int] = None,
+        server_default: typing.Optional[str] = None,
     ) -> None:
         self.name = name
         self.type = type
@@ -321,7 +321,6 @@ class LocalField(Field):
         self.immutable = immutable
         self.unique = unique
         self.default = default
-        self.server_default = server_default
         self.enum = enum
         self.format = format
         self.metadata = metadata
@@ -329,6 +328,7 @@ class LocalField(Field):
         self.fsm = fsm
         self.dbtype = dbtype
         self.length = length
+        self.server_default = server_default
 
 
 class RefField(Field):
