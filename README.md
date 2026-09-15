@@ -17,8 +17,8 @@ Qmonus-SDKのPlugin開発の際、以下のようなエディタの持つ開発�
 `class`、`module`、`scenario`、`daemon`をサポートしています。
 
 ## サポートバージョン
-- Python 3.10
 - Python 3.12
+- Python 3.13
 
 ※Qmonus-SDKのバージョンに合わせてください。
 
