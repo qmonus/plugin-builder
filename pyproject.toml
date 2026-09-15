@@ -5,12 +5,12 @@ description = "Qmonus-PluginBuilder"
 authors = ["NTT DOCOMO BUSINESS, Inc."]
 
 [tool.poetry.dependencies]
-python = ">=3.10"
+python = ">=3.12"
 PyYAML = ">=6.0.1"
-SQLAlchemy = ">=1.4.31"
+SQLAlchemy = ">=1.4.53"
 jsonschema = ">=4.4.0"
 Jinja2 = ">=3.1.2"
-pysnmp = ">=4.4.12"
+pysnmp = ">=7.0.0"
 pyasn1 = ">=0.6.4"
 xmltodict = ">=0.13.0"
 cryptography = ">=50.0.0"
@@ -32,7 +32,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.mypy]
 files = ["src"]
 exclude = ["src/qmonus_plugin_builder/init_files"]
-python_version = 3.9
+python_version = "3.12"
 show_error_codes = true
 warn_unused_configs = true
 check_untyped_defs = true
