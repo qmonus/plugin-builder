@@ -12,38 +12,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  eol-check:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+  maintenance-check:
+    uses: qmonus/qmonus-shared-workflows/.github/workflows/maintenance-check.yml@fc185461378ae61b3bdc04e823859dae5e58b28b # v1.2
     permissions:
       contents: 'read'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with:
-          python-version: '3.12'
-
-      - name: Check EOL status via endoflife.date
-        run: python .github/scripts/check_eol.py
-
-  dependency-maintenance-check:
-    runs-on: ubuntu-latest
-    # ロックファイル(package-lock.json等)がある場合は間接依存も対象になり、
-    # パッケージ数が数百〜千件規模になり得るため15分では不足する可能性がある。
-    timeout-minutes: 30
-    permissions:
-      contents: 'read'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with:
-          python-version: '3.12'
-
-      - name: Check dependency maintenance status via deps.dev
-        run: python .github/scripts/check_dependency_maintenance.py
